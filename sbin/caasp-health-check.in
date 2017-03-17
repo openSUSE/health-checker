@@ -1,0 +1,56 @@
+#!/bin/bash
+
+#
+# Check health state of the system
+#
+# Check, if important services are started and running. If this is not the
+# case:
+# - on first boot after update, rollback to old snapshot
+# - if it is not the first boot, reboot
+# - if reboot does not help, log this
+#
+
+STATE_FILE=/var/lib/misc/health-check.state
+REBOOTED_STATE=/var/lib/misc/health-check.rebooted
+
+get_btrfs_id()
+{
+    BTRFS_ID=`btrfs subvolume get-default / | awk '{print $2}'`
+    return $BTRFS_ID
+}
+
+save_working_snapshot()
+{
+    BTRFS_ID=get_btrfs_id
+
+    echo "LAST_WORKING_BTRFS_ID=${BTRFS_ID}" > $STATE_FILE
+}
+
+rollback()
+{
+    . ${STATE_FILE}
+    btrfs subvolume set-default ${LAST_WORKING_BTRFS_ID} /.snapshots
+    if [ $? -ne 0 ]; then
+        log_error "ERROR: btrfs set-default $BTRFS_ID failed!"
+        exit 1
+    fi
+}
+
+error_decission()
+{
+  . ${STATE_FILE}
+
+  BTRFS_ID=get_btrfs_id
+
+  if [ ${LAST_WORKING_BTRFS_ID} -ne ${BTRFS_ID} ]; then
+      rollback
+      if [$? -eq 0 ]; then
+	  systemctl reboot
+      fi
+  elif [ ! -f ${REBOOTED_STATE} ]; then
+      echo `date "+%Y-%m-%d %H:%M"` > ${REBOOTED_STATE}
+      systemctl reboot
+  else
+      systemctl poweroff
+  fi
+}
