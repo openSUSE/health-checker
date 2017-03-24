@@ -15,7 +15,7 @@ run_checks() {
    fi
 }
 
-disable_services() {
+stop_services() {
     exit 1
 }
 
@@ -23,11 +23,11 @@ case "$1" in
     check)
 	run_checks
 	;;
-    disable)
-	disable_services
+    stop)
+	stop_services
 	;;
     *)
-	echo "Usage: $0 {check|disable}"
+	echo "Usage: $0 {check|stop}"
 	exit 1
 	;;
 esac

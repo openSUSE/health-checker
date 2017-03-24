@@ -38,11 +38,11 @@ rollback()
     fi
 }
 
-disable_services()
+stop_services()
 {
-    # disable all services
+    # stop all services
     for script in ${PLUGINDIR}/* ; do
-	${script} disable
+	${script} stop 
     done
 }
 
@@ -50,8 +50,8 @@ error_decission()
 {
     if [ ! -f ${STATE_FILE} ]; then
 	# No state file, no successfull boot
-	logger -s -p user.emerg "Machine didn't come up correct, disabling services"
-	disable_services
+	logger -s -p user.emerg "Machine didn't come up correct, stop services"
+	stop_services
 	return
     fi
 
@@ -70,8 +70,8 @@ error_decission()
       echo `date "+%Y-%m-%d %H:%M"` > ${REBOOTED_STATE}
       systemctl reboot
   else
-      logger -s -p user.emerg "Machine didn't come up correct, disabling services"
-      disable_services
+      logger -s -p user.emerg "Machine didn't come up correct, stop services"
+      stop_services
   fi
 }
 

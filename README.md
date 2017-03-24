@@ -30,6 +30,6 @@ following actions:
 3. If the current btrfs snapshot did already boot successful in the past and
    if we did try already to solve the problem with a reboot, it doesn't make
    sense to reboot again. To give the admin the chance and possibility to fix
-   the problem, all plugins will be called with the option *disable*. At the
+   the problem, all plugins will be called with the option *stop*. At the
    end, the machine should still run, so that an admin can login, but no
    service should run, so that nothing can break.
