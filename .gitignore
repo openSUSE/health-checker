@@ -25,3 +25,11 @@ config.status
 test-driver
 test-suite.log
 check-output.*
+health-checker-*.tar.*
+man/health-checker.8
+man/health-checker.index.html
+man/health-checker.index.xml
+man/health-checker.service.8
+man/*.html
+man/*.pyc
+sbin/health-checker
