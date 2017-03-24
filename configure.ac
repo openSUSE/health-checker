@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT(health-checker, 0.1)
+AC_INIT(health-checker, 0.2)
 AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([sbin/health-checker.in])
 AC_PREFIX_DEFAULT(/usr)

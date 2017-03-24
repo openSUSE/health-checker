@@ -4,6 +4,7 @@
 
 plugindir = @PLUGINDIR@
 
-plugin_SCRIPTS = health-check-tester.sh
+plugin_SCRIPTS = health-check-tester.sh etcd.sh etc-overlayfs.sh \
+	rebootmgr.sh
 
 EXTRA_DIST = template.sh ${SCRIPTS}
