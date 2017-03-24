@@ -7,7 +7,7 @@ run_checks() {
     test $? -ne 1 && exit 1
 
     TMPF=$(mktemp -q /etc/test-for-read-write.XXXXXX) || exit 1
-    rm %{TMPF}
+    rm ${TMPF}
 }
 
 case "$1" in
