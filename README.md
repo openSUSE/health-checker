@@ -9,7 +9,7 @@ Check the state of a SUSE CaaSP system after a reboot.
 process. All services, which should be checked, needs to be listed in the
 'After' section.
 
-The `healt-checker` script will call several plugins. Every plugin is
+The `health-checker` script will call several plugins. Every plugin is
 responsible to check a special service or condition. For this, the plugin is
 called with the option *check*. If this fails, the plugin will exit with the
 return value `1`, else `0`.
