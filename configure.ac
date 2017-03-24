@@ -1,29 +1,21 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT(caasp-health-check, 0.1)
+AC_INIT(health-checker, 0.1)
 AM_INIT_AUTOMAKE
-AC_CONFIG_SRCDIR([sbin/caasp-health-check.in])
+AC_CONFIG_SRCDIR([sbin/health-checker.in])
 AC_PREFIX_DEFAULT(/usr)
 
 AC_SUBST(PACKAGE)
 AC_SUBST(VERSION)
 
-if test ${libexecdir} = '${exec_prefix}/libexec'
-then
-  libexecdir='${exec_prefix}/lib'
-  if test "${exec_prefix}" = "NONE"
-  then
-    TMPFILESDIR=${prefix}/lib/tmpfiles.d
-    SYSTEMDDIR=${prefix}/lib/systemd/system
-  else
-    TMPFILESDIR=${exec_prefix}/lib/tmpfiles.d
-    SYSTEMDDIR=${exec_prefix}/lib/systemd/system
-  fi
-else
-  TMPFILESDIR=${libexecdir}/tmpfiles.d
-  SYSTEMDDIR=${libexecdir}/systemd/system
-fi
+test "${prefix}" = "NONE" && prefix="/usr"
+test "${exec_prefix}" = "NONE" && exec_prefix="/usr"
+test ${libexecdir} = '${exec_prefix}/libexec' && libexecdir="${exec_prefix}/lib"
+TMPFILESDIR=${libexecdir}/tmpfiles.d
+SYSTEMDDIR=${libexecdir}/systemd/system
+PLUGINDIR=${libexecdir}/health-checker
 AC_SUBST(TMPFILESDIR)
 AC_SUBST(SYSTEMDDIR)
+AC_SUBST(PLUGINDIR)
 
 AC_PROG_INSTALL
 AC_PROG_LN_S
@@ -45,4 +37,4 @@ JH_CHECK_XML_CATALOG([http://docbook.sourceforge.net/release/xsl/current/manpage
 AM_CONDITIONAL(ENABLE_REGENERATE_MAN, test x$enable_man != xno)
 
 AC_OUTPUT([Makefile sbin/Makefile man/Makefile systemd/Makefile \
-	sbin/caasp-health-check])
+	plugins/Makefile sbin/health-checker])

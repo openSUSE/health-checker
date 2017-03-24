@@ -3,11 +3,11 @@
                    "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd">
 
 <!--  \-*\- nroff \-*\- -->
-<!--  Copyright 2016 Thorsten Kukuk &lt;kukuk@suse.de&gt; -->
+<!--  Copyright 2017 Thorsten Kukuk &lt;kukuk@suse.de&gt; -->
 
-<!--  This file is part of issue\-generator. -->
+<!--  This file is part of health\-checker. -->
 
-<!--  issue\-generator is free software; you can redistribute it and/or -->
+<!--  health\-checker is free software; you can redistribute it and/or -->
 <!--  modify it under the terms of the GNU General Public License as -->
 <!--  published by the Free Software Foundation; either version 2 of the -->
 <!--  License, or (at your option) any later version. -->
@@ -20,10 +20,10 @@
 <!--  You should have received a copy of the GNU General Public License -->
 <!-- along with rebootmgr; If not, see <http://www.gnu.org/licenses/>.  -->
 
-<refentry id='issue-generator.8'>
+<refentry id='health-checker.8'>
   <refentryinfo>
-    <title>issue-generator</title>
-    <productname>issue-generator</productname>
+    <title>health-checker</title>
+    <productname>health-checker</productname>
 
     <authorgroup>
       <author>
@@ -36,49 +36,45 @@
   </refentryinfo>
 
   <refmeta>
-    <refentrytitle>issue-generator</refentrytitle>
+    <refentrytitle>health-checker</refentrytitle>
     <manvolnum>8</manvolnum>
-    <refmiscinfo class='setdesc'>issue-generator</refmiscinfo>
+    <refmiscinfo class='setdesc'>health-checker</refmiscinfo>
   </refmeta>
 
   <refnamediv id='name'>
-    <refname>issue-generator</refname>
-    <refname>issue-add-ssh-keys.service</refname>
-    <refname>issue-generator.service</refname>
-    <refname>90-issue-generator.rules</refname>
-    <refname>issue-generator.conf</refname>
-    <refpurpose>Creates a volatile and temporary issue file</refpurpose>
+    <refname>health-checker</refname>
+    <refname>health-checker.service</refname>
+    <refpurpose>Checks that all important services of a system did come up
+    correctly after an update and reboot.</refpurpose>
   </refnamediv>
 
 <!-- body begins here -->
   <refsynopsisdiv id='synopsis'>
     <cmdsynopsis>
-      <command>/usr/sbin/issue-generator</command>
-      <arg choice='opt'>--prefix <replaceable>path</replaceable></arg>
-      <arg choice='opt'>--help</arg>
+      <command>/usr/sbin/health-checker</command>
     </cmdsynopsis>
     <cmdsynopsis>
-      <command>/usr/sbin/issue-generator</command>
+      <command>/usr/sbin/health-checker</command>
       <arg choice='plain'>network <group choice='plain'><arg
       choice='plain'>add</arg><arg choice='plain'>remove</arg></group>
       <replaceable>interface</replaceable></arg>
     </cmdsynopsis>
     <cmdsynopsis>
-      <command>/usr/sbin/issue-generator</command>
+      <command>/usr/sbin/health-checker</command>
       <arg choice='plain'>ssh<group choice='plain'><arg
       choice='plain'>add</arg><arg choice='plain'>remove</arg></group></arg>
     </cmdsynopsis>
     <cmdsynopsis>
-      <command>/usr/sbin/issue-generator</command>
+      <command>/usr/sbin/health-checker</command>
       <arg choice='plain'>--version </arg>
     </cmdsynopsis>
     <para><filename>issue-add-ssh-keys.service</filename></para>
-    <para><filename>issue-generator.service</filename></para>
+    <para><filename>health-checker.service</filename></para>
   </refsynopsisdiv>
 
 
 <refsect1 id='description'><title>DESCRIPTION</title>
-<para><emphasis remap='B'>issue-generator</emphasis>
+<para><emphasis remap='B'>health-checker</emphasis>
 creates a volatile and temporary
 <citerefentry><refentrytitle>issue</refentrytitle><manvolnum>5</manvolnum></citerefentry>
 file based on the input files and location specified in

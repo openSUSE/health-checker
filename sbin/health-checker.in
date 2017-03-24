@@ -1,0 +1,99 @@
+#!/bin/bash
+
+#
+# Check health state of the system
+#
+# Check, if important services are started and running. If this is not the
+# case:
+# - on first boot after update, rollback to old snapshot
+# - if it is not the first boot, reboot
+# - if reboot does not help, log this
+#
+
+STATE_FILE=/var/lib/misc/health-check.state
+REBOOTED_STATE=/var/lib/misc/health-check.rebooted
+PLUGINDIR=@PLUGINDIR@
+
+BTRFS_ID=0
+
+set_btrfs_id()
+{
+    BTRFS_ID=`btrfs subvolume get-default / | awk '{print $2}'`
+}
+
+save_working_snapshot()
+{
+    set_btrfs_id
+
+    echo "LAST_WORKING_BTRFS_ID=${BTRFS_ID}" > $STATE_FILE
+}
+
+rollback()
+{
+    . ${STATE_FILE}
+    btrfs subvolume set-default ${LAST_WORKING_BTRFS_ID} /.snapshots
+    if [ $? -ne 0 ]; then
+        log_error "ERROR: btrfs set-default $BTRFS_ID failed!"
+        exit 1
+    fi
+}
+
+disable_services()
+{
+    # disable all services
+    for script in ${PLUGINDIR}/* ; do
+	${script} disable
+    done
+}
+
+error_decission()
+{
+    if [ ! -f ${STATE_FILE} ]; then
+	# No state file, no successfull boot
+	logger -s -p user.emerg "Machine didn't come up correct, disabling services"
+	disable_services
+	return
+    fi
+
+  . ${STATE_FILE}
+
+  set_btrfs_id
+
+  if [ ${LAST_WORKING_BTRFS_ID} -ne ${BTRFS_ID} ]; then
+      logger -s -p user.alert "Machine didn't come up correct, do a rollback"
+      rollback
+      if [ $? -eq 0 ]; then
+	  systemctl reboot
+      fi
+  elif [ ! -f ${REBOOTED_STATE} ]; then
+      logger -s -p user.critical "Machine didn't come up correct, try a reboot"
+      echo `date "+%Y-%m-%d %H:%M"` > ${REBOOTED_STATE}
+      systemctl reboot
+  else
+      logger -s -p user.emerg "Machine didn't come up correct, disabling services"
+      disable_services
+  fi
+}
+
+echo "Starting health check"
+FAILED=0;
+for script in ${PLUGINDIR}/* ; do
+  ${script} check
+  if [ $? -ne 0 ]; then
+      logger -s -p user.critical "ERROR: \"${script} check\" failed"
+      FAILED=1
+  fi
+done
+
+if [ ${FAILED} -ne 0 ]; then
+    echo "Health check failed!"
+    error_decission
+    exit 1
+else
+    echo "Health check passed"
+    # Save good working state and remove old rebooted state file
+    save_working_snapshot
+    rm -rf ${REBOOTED_STATE}
+fi
+
+exit 0

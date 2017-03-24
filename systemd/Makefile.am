@@ -4,6 +4,6 @@
 
 systemddir = @SYSTEMDDIR@
 
-systemd_DATA = issue-add-ssh-keys.service issue-generator.service 
+systemd_DATA = health-checker.service 
 
 EXTRA_DIST = $(DATA)

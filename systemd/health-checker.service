@@ -1,5 +1,5 @@
 [Unit]
-Description=CaaSP Health Check
+Description=CaaSP Health Checker
 After=etcd.service
 After=flanneld.service
 After=cloud-final.service
@@ -7,7 +7,7 @@ Wants=local-fs.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/sbin/caasp-health-check
+ExecStart=/usr/sbin/health-checker
 
 [Install]
 WantedBy=default.target
