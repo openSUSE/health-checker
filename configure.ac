@@ -13,9 +13,11 @@ test ${libexecdir} = '${exec_prefix}/libexec' && libexecdir="${exec_prefix}/lib"
 TMPFILESDIR=${libexecdir}/tmpfiles.d
 SYSTEMDDIR=${libexecdir}/systemd/system
 PLUGINDIR=${libexecdir}/health-checker
+DRACUTDIR=${libexecdir}/dracut
 AC_SUBST(TMPFILESDIR)
 AC_SUBST(SYSTEMDDIR)
 AC_SUBST(PLUGINDIR)
+AC_SUBST(DRACUTDIR)
 
 AC_PROG_INSTALL
 AC_PROG_LN_S
@@ -37,4 +39,4 @@ JH_CHECK_XML_CATALOG([http://docbook.sourceforge.net/release/xsl/current/manpage
 AM_CONDITIONAL(ENABLE_REGENERATE_MAN, test x$enable_man != xno)
 
 AC_OUTPUT([Makefile sbin/Makefile man/Makefile systemd/Makefile \
-	plugins/Makefile sbin/health-checker])
+	plugins/Makefile dracut/Makefile sbin/health-checker])

@@ -33,7 +33,7 @@ rollback()
     . ${STATE_FILE}
     btrfs subvolume set-default ${LAST_WORKING_BTRFS_ID} /.snapshots
     if [ $? -ne 0 ]; then
-        log_error "ERROR: btrfs set-default $BTRFS_ID failed!"
+        logger -s -p user.critical "ERROR: btrfs set-default $BTRFS_ID failed!"
         exit 1
     fi
 }
