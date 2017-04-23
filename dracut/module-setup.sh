@@ -14,6 +14,6 @@ depends() {
 install() {
     inst_hook emergency 90 "$moddir"/health-checker-emergency.sh
 
-    inst_multiple date btrfs
+    inst_multiple date btrfs awk
 }
 

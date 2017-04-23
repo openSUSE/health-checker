@@ -13,16 +13,16 @@ BTRFS_ID=0
 
 set_btrfs_id()
 {
-    BTRFS_ID=`btrfs subvolume get-default / | awk '{print $2}'`
+    BTRFS_ID=`btrfs subvolume get-default ${NEWROOT} | awk '{print $2}'`
 }
 
 rollback()
 {
     . ${STATE_FILE}
-    btrfs subvolume set-default ${LAST_WORKING_BTRFS_ID} i${NEWROOT}/.snapshots
+    btrfs subvolume set-default ${LAST_WORKING_BTRFS_ID} ${NEWROOT}/.snapshots
     if [ $? -ne 0 ]; then
         warn "ERROR: btrfs set-default $BTRFS_ID failed!"
-        exit 1
+        return 1
     fi
 }
 
@@ -30,7 +30,8 @@ error_decission()
 {
     if [ ! -f ${STATE_FILE} ]; then
         # No state file, no successfull boot, start emergency shell
-        return
+	info "No successfull boot before"
+        return 0
     fi
 
   . ${STATE_FILE}
@@ -51,19 +52,24 @@ error_decission()
       emergency_shell --shutdown reboot
   else
       warn "Machine didn't come up correct, start emergency shell"
-      return
+      return 0
   fi
 }
 
 
-echo "health checker emergency mode"
+info "health checker emergency mode"
 
 # Make sure we know root device
 [ -z "$root" ] && root=$(getarg root=)
 
-mkdir /run/health-checker
-mount "$root" -o subvol=@/var/lib/misc /run/health-checker
+if [ -n "$root" -a -z "${root%%block:*}" ]; then
 
-error_decission
-
-umount /run/health-checker
+  mkdir -p /run/health-checker
+  mount -t btrfs -o subvol=@/var/lib/misc "${root#block:}" /run/health-checker
+  if [ $? -ne 0 ]; then
+    warn "Failed: mount -t btrfs -o subvol=@/var/lib/misc "${root#block:}" /run/health-checker"
+  else
+    error_decission
+    umount /run/health-checker ||:
+  fi
+fi

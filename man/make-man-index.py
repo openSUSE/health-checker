@@ -1,17 +1,17 @@
 #  -*- Mode: python; coding: utf-8; indent-tabs-mode: nil -*- */
 #
 #  The original file is part of systemd. This one was modified for
-#  issue-generator.
+#  health-checker.
 #
 #  Copyright 2012 Lennart Poettering
 #  Copyright 2013 Zbigniew Jędrzejewski-Szmek
 #
-#  systemd is free software; you can redistribute it and/or modify it
+#  This program is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU Lesser General Public License as published by
 #  the Free Software Foundation; either version 2.1 of the License, or
 #  (at your option) any later version.
 #
-#  systemd is distributed in the hope that it will be useful, but
+#  This program is distributed in the hope that it will be useful, but
 #  WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 #  Lesser General Public License for more details.
@@ -27,21 +27,21 @@ from xml_helper import *
 MDASH = ' — ' if sys.version_info.major >= 3 else ' -- '
 
 TEMPLATE = '''\
-<refentry id="issue-generator.index" conditional="HAVE_PYTHON">
+<refentry id="health-checker.index" conditional="HAVE_PYTHON">
 
   <refentryinfo>
-    <title>issue-generator.index</title>
-    <productname>issue-generator</productname>
+    <title>health-checker.index</title>
+    <productname>health-checker</productname>
   </refentryinfo>
 
   <refmeta>
-    <refentrytitle>issue-generator.index</refentrytitle>
+    <refentrytitle>health-checker.index</refentrytitle>
     <manvolnum>7</manvolnum>
   </refmeta>
 
   <refnamediv>
-    <refname>issue-generator.index</refname>
-    <refpurpose>List all manpages from the issue-generator project</refpurpose>
+    <refname>health-checker.index</refname>
+    <refpurpose>List all manpages from the health-checker project</refpurpose>
   </refnamediv>
 </refentry>
 '''

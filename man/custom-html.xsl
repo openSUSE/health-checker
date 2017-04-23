@@ -5,18 +5,18 @@
 
   Copyright 2011 Lennart Poettering
 
-  systemd is free software; you can redistribute it and/or modify it
+  This program is free software; you can redistribute it and/or modify it
   under the terms of the GNU Lesser General Public License as published by
   the Free Software Foundation; either version 2.1 of the License, or
   (at your option) any later version.
 
-  systemd is distributed in the hope that it will be useful, but
+  This program is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   Lesser General Public License for more details.
 
   You should have received a copy of the GNU Lesser General Public License
-  along with systemd; If not, see <http://www.gnu.org/licenses/>.
+  along with this program; If not, see <http://www.gnu.org/licenses/>.
 -->
 
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
@@ -65,6 +65,17 @@
   <a>
     <xsl:attribute name="href">
       <xsl:text>https://www.freedesktop.org/software/systemd/man/</xsl:text>
+      <xsl:value-of select="refentrytitle"/>
+      <xsl:text>.html</xsl:text>
+    </xsl:attribute>
+    <xsl:call-template name="inline.charseq"/>
+  </a>
+</xsl:template>
+
+<xsl:template match="citerefentry[@project='snapper']">
+  <a>
+    <xsl:attribute name="href">
+      <xsl:text>http://snapper.io/manpages/</xsl:text>
       <xsl:value-of select="refentrytitle"/>
       <xsl:text>.html</xsl:text>
     </xsl:attribute>
@@ -217,14 +228,14 @@
 
   <a>
     <xsl:attribute name="href">
-      <xsl:text>issue-generator.index.html</xsl:text>
+      <xsl:text>health-checker.index.html</xsl:text>
     </xsl:attribute>
     <xsl:text>Index </xsl:text>
   </a>
 
   <span style="float:right">
-    <xsl:text>issue-generator </xsl:text>
-    <xsl:value-of select="$issue-generator.version"/>
+    <xsl:text>health-checker </xsl:text>
+    <xsl:value-of select="$package.version"/>
   </span>
   <hr/>
 </xsl:template>

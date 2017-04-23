@@ -4,6 +4,6 @@
 
 modulesdir = @DRACUTDIR@/modules.d/50health-checker
 
-modules_DATA = health-checker-emergency.sh module-setup.sh
+modules_SCRIPTS = health-checker-emergency.sh module-setup.sh
 
-EXTRA_DIST = $(DATA)
+EXTRA_DIST = $(SCRIPTS)
