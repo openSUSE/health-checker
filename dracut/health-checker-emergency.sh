@@ -64,10 +64,20 @@ info "health checker emergency mode"
 
 if [ -n "$root" -a -z "${root%%block:*}" ]; then
 
+  info "root device: ${root}"
+
+  local my_root="${root#block:}"
+
+  info "my_root device: ${my_root}"
+
+  test -e "${my_root}" || return
+
+  info "my_root device exist"
+
   mkdir -p /run/health-checker
-  mount -t btrfs -o subvol=@/var/lib/misc "${root#block:}" /run/health-checker
+  mount -t btrfs -o subvol=@/var/lib/misc "${my_root}" /run/health-checker
   if [ $? -ne 0 ]; then
-    warn "Failed: mount -t btrfs -o subvol=@/var/lib/misc "${root#block:}" /run/health-checker"
+    warn "Failed: mount -t btrfs -o subvol=@/var/lib/misc "${my_root}" /run/health-checker"
   else
     error_decission
     umount /run/health-checker ||:
