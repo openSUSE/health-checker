@@ -2,6 +2,9 @@ issue-generator NEWS -- history of user-visible changes.
 
 Copyright (C) 2017 Thorsten Kukuk
 
+Version 0.4
+* Add script to verify btrfs subvolume mounts
+
 Version 0.3
 * First code for dracut module added
 * Wrote documentation
