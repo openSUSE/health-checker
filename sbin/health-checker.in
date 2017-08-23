@@ -33,7 +33,7 @@ rollback()
     . ${STATE_FILE}
     btrfs subvolume set-default ${LAST_WORKING_BTRFS_ID} /.snapshots
     if [ $? -ne 0 ]; then
-        logger -s -p user.critical "ERROR: btrfs set-default $BTRFS_ID failed!"
+        logger -s -p user.crit "ERROR: btrfs set-default $BTRFS_ID failed!"
         exit 1
     fi
 }
@@ -66,7 +66,7 @@ error_decission()
 	  systemctl reboot
       fi
   elif [ ! -f ${REBOOTED_STATE} ]; then
-      logger -s -p user.critical "Machine didn't come up correct, try a reboot"
+      logger -s -p user.crit "Machine didn't come up correct, try a reboot"
       echo `date "+%Y-%m-%d %H:%M"` > ${REBOOTED_STATE}
       systemctl reboot
   else
@@ -80,7 +80,7 @@ FAILED=0;
 for script in ${PLUGINDIR}/* ; do
   ${script} check
   if [ $? -ne 0 ]; then
-      logger -s -p user.critical "ERROR: \"${script} check\" failed"
+      logger -s -p user.crit "ERROR: \"${script} check\" failed"
       FAILED=1
   fi
 done
