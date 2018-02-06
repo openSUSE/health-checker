@@ -1,6 +1,9 @@
 #!/bin/sh
 
 # if we enter emergency mode, do:
+# - if it's not even possible to mount the root file system reboot and try to
+#   recover using grub
+# otherwise:
 # - on first boot after update, rollback to old snapshot
 # - if it is not the first boot, reboot
 # - if reboot does not help, log this
@@ -14,6 +17,23 @@ BTRFS_ID=0
 set_btrfs_id()
 {
     BTRFS_ID=`btrfs subvolume get-default ${NEWROOT} | awk '{print $2}'`
+}
+
+clear_and_reboot()
+{
+  # Try to clear the health_checker flag variable in GRUB environment variable
+  # block
+  echo "Clearing GRUB health_checker_flag"
+  grub2-editenv - set health_checker_flag=0
+
+  umount /run/health-checker
+  systemctl reboot --force
+}
+
+try_grub_recovery()
+{
+  warn "Trying recovery via GRUB2 snapshot mechanism."
+  systemctl reboot --force
 }
 
 rollback()
@@ -43,14 +63,12 @@ error_decission()
       warn "Machine didn't come up correct, do a rollback"
       rollback
       if [ $? -eq 0 ]; then
-        umount /run/health-checker
-        reboot
+        clear_and_reboot
       fi
   elif [ ! -f ${REBOOTED_STATE} ]; then
       warn "Machine didn't come up correct, try a reboot"
       echo `date "+%Y-%m-%d %H:%M"` > ${REBOOTED_STATE}
-      umount /run/health-checker
-      reboot
+      clear_and_reboot
   else
       warn "Machine didn't come up correct, start emergency shell"
       return 0
@@ -84,11 +102,15 @@ if [ -n "$root" -a -z "${root%%block:*}" ]; then
     ln -s /run/health-checker/var/lib/misc -t /var/lib/misc
   fi
 
-  # Try to revocer somehow
+  # Try to recover somehow
   if [ -e /var/lib/misc ]; then
     error_decission
     umount /run/health-checker ||:
   else
     warn "Mounting health-checker data failed."
+    try_grub_recovery
   fi
+else
+  warn "No root device found."
+  try_grub_recovery
 fi

@@ -1,0 +1,38 @@
+#!/bin/sh
+set -e
+
+cat << EOF
+# Only consider showing a fallback entry on the top level menu
+if [ -z "\${chosen}" -a -z "\${boot_once}" ]; then
+  # If flag is set on boot the last start seems to have failed - the flag
+  # should have been cleared by userspace
+  if [ "\${health_checker_flag}" -ge 1 ]; then
+    # Reset flag; it will be set again by a supported menu entry.
+    # This prevents getting stuck in a loop when booting an entry that
+    # doesn't support this flag yet.
+    health_checker_flag=0
+    save_env -f "\${env_block}" health_checker_flag
+    # Try to mount /var/lib/misc from know subvolume locations
+    btrfs-mount-subvol (\${root}) /var /@/var
+    btrfs-mount-subvol (\${root}) /var/lib/misc /@/var/lib/misc
+
+    # Due to boo#1048088 btrfs-list-subvols currently doesn't give a list of
+    # subvolumes, so it's not possible to map
+    # /var/lib/misc/health-checker.state to a snapshot directory; use
+    # transactional-update state file as a workaround.
+    if [ -e /var/lib/misc/transactional-update.state ]; then
+      source /var/lib/misc/transactional-update.state
+      btrfs-mount-subvol (\$root) /.snapshots @/.snapshots
+      for snapshot in \${LAST_WORKING_SNAPSHOTS}; do
+        if [ -e "/.snapshots/\${snapshot}/grub-snapshot.cfg" ]; then
+          menuentry "Previous boot failed; booting snapshot \${snapshot}" { true; }
+          source /.snapshots/\${snapshot}/grub-snapshot.cfg
+          menuentry "________________" { true; }
+          set default=1
+          break
+        fi;
+      done
+    fi
+  fi
+fi
+EOF
