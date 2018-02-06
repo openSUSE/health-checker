@@ -19,7 +19,8 @@ set_btrfs_id()
 rollback()
 {
     . ${STATE_FILE}
-    btrfs subvolume set-default ${LAST_WORKING_BTRFS_ID} ${NEWROOT}/.snapshots
+    mount -o remount,rw ${NEWROOT}
+    btrfs subvolume set-default ${LAST_WORKING_BTRFS_ID} ${NEWROOT}
     if [ $? -ne 0 ]; then
         warn "ERROR: btrfs set-default $BTRFS_ID failed!"
         return 1
@@ -43,13 +44,13 @@ error_decission()
       rollback
       if [ $? -eq 0 ]; then
         umount /run/health-checker
-        emergency_shell --shutdown reboot
+        reboot
       fi
   elif [ ! -f ${REBOOTED_STATE} ]; then
       warn "Machine didn't come up correct, try a reboot"
       echo `date "+%Y-%m-%d %H:%M"` > ${REBOOTED_STATE}
       umount /run/health-checker
-      emergency_shell --shutdown reboot
+      reboot
   else
       warn "Machine didn't come up correct, start emergency shell"
       return 0
