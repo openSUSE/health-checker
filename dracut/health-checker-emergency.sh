@@ -6,8 +6,8 @@
 # - if reboot does not help, log this
 #
 
-STATE_FILE=/run/health-checker/health-check.state
-REBOOTED_STATE=/run/health-checker/health-check.rebooted
+STATE_FILE=/var/lib/misc/health-check.state
+REBOOTED_STATE=/var/lib/misc/health-check.rebooted
 
 BTRFS_ID=0
 
@@ -75,12 +75,20 @@ if [ -n "$root" -a -z "${root%%block:*}" ]; then
 
   info "my_root device exist"
 
+  # Try to mount health-checker data
   mkdir -p /run/health-checker
-  mount -t btrfs -o subvol=@/var/lib/misc "${my_root}" /run/health-checker
-  if [ $? -ne 0 ]; then
-    warn "Failed: mount -t btrfs -o subvol=@/var/lib/misc "${my_root}" /run/health-checker"
-  else
+  mkdir -p /var/lib
+  if mount -t btrfs -o subvol=@/var/lib/misc "${my_root}" /run/health-checker; then
+    ln -s /run/health-checker -t /var/lib/misc
+  elif mount -t btrfs -o subvol=@/var "${my_root}" /run/health-checker; then
+    ln -s /run/health-checker/var/lib/misc -t /var/lib/misc
+  fi
+
+  # Try to revocer somehow
+  if [ -e /var/lib/misc ]; then
     error_decission
     umount /run/health-checker ||:
+  else
+    warn "Mounting health-checker data failed."
   fi
 fi
