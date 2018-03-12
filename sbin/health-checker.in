@@ -75,6 +75,10 @@ error_decission()
   fi
 }
 
+# Clear GRUB flag (used to determine if system was able to boot at all)
+echo "Clearing GRUB flag"
+grub2-editenv - set health_checker_flag=0
+
 echo "Starting health check"
 FAILED=0;
 for script in ${PLUGINDIR}/* ; do

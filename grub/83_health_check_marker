@@ -1,0 +1,34 @@
+#!/bin/sh
+set -e
+
+# GRUB's grub2_mkconfig script currently has some serious limitations, one of 
+# them beeing not providing a way to modify anything done by previous scripts;
+# unfortunately health_checker requires additional commands to be executed
+# when selecting a boot entry (which is usually created by 10_linux), so as a
+# horrible workaround the temporary output will be modified by a sed script.
+#
+# Will only work if output is redirected to a file (which should be the case
+# in all automated cases), but not when the user is calling grub2-mkconfig by
+# hand without redirection.
+
+cfgfile="`readlink /proc/$$/fd/1`"
+if [ -f "$cfgfile" ]; then
+  lines_to_add='\n\thealth_checker_flag=1\n\tsave_env -f "${env_block}" health_checker_flag'
+
+  # The sed expression below will inject contents into the opened file; the
+  # original process will not notice that and will continue writing from the
+  # last position. To set the pointer to the correct posision add the number
+  # of characters which will be injected to the file (they won't appear in
+  # the final output).
+  echo -n -e $lines_to_add
+
+  sed 's/^\(menuentry .*\)/\1\n\thealth_checker_flag=1\n\tsave_env -f "${env_block}" health_checker_flag/' "$cfgfile" > "$cfgfile".health_checker
+  cp "$cfgfile".health_checker "$cfgfile"
+  rm "$cfgfile".health_checker
+fi
+
+cat << EOF
+# Prevent infinite waiting for disk if drivers in initrd are broken
+extra_cmdline="\${extra_cmdline} rd.timeout=60"
+EOF
+

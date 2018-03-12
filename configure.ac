@@ -39,4 +39,5 @@ JH_CHECK_XML_CATALOG([http://docbook.sourceforge.net/release/xsl/current/manpage
 AM_CONDITIONAL(ENABLE_REGENERATE_MAN, test x$enable_man != xno)
 
 AC_OUTPUT([Makefile sbin/Makefile man/Makefile systemd/Makefile \
-	plugins/Makefile dracut/Makefile sbin/health-checker])
+	plugins/Makefile dracut/Makefile grub/Makefile \
+	sbin/health-checker])
