@@ -1,6 +1,12 @@
 issue-generator NEWS -- history of user-visible changes.
 
-Copyright (C) 2017 Thorsten Kukuk
+Copyright (C) 2017-2018 Thorsten Kukuk
+
+Version 1.0
+* Skip health checker if emergency shell started by user
+* Add GRUB2 fallback handling
+* Adapt to new unified /var directory.
+* Get basic version of rollback from initrd working
 
 Version 0.5
 * Fix logger arguments
