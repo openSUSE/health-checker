@@ -5,6 +5,6 @@
 plugindir = @PLUGINDIR@
 
 plugin_SCRIPTS = health-check-tester.sh etcd.sh etc-overlayfs.sh \
-	rebootmgr.sh btrfs-subvolumes-mounted.sh
+	rebootmgr.sh btrfs-subvolumes-mounted.sh crio.sh kubelet.sh
 
 EXTRA_DIST = template.sh ${SCRIPTS}
