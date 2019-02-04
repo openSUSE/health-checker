@@ -1,8 +1,9 @@
 [Unit]
 Description=CaaSP Health Checker
-After=etcd.service
-After=flanneld.service
 After=cloud-final.service
+After=crio.service
+After=etcd.service
+After=kubelet.service
 After=rebootmgr.service
 Wants=local-fs.target
 
