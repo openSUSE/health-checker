@@ -13,12 +13,57 @@
 STATE_FILE=/var/lib/misc/health-check.state
 REBOOTED_STATE=/var/lib/misc/health-check.rebooted
 PLUGINDIR=@PLUGINDIR@
+TELEM_SEVERITY=1
+TELEM_PAYLOAD=""
 
 BTRFS_ID=0
 
 set_btrfs_id()
 {
     BTRFS_ID=`btrfs subvolume get-default / | awk '{print $2}'`
+}
+
+create_log()
+{
+    local SEVERITY=1
+
+    logger -s -p $1 $2
+
+    # Create severity and payload for telemetrics if available
+    case $1 in
+	user.emerg)
+	    SEVERITY=4
+	    ;;
+	user.crit)
+	    SEVERITY=3
+	    ;;
+	user.alert)
+	    SEVERITY=2
+	    ;;
+	*)
+	    SEVERITY=1
+	    ;;
+    esac
+
+    if [ $SEVERITY -gt $TELEM_SEVERITY ]; then
+	TELEM_SEVERITY=$SEVERITY
+    fi
+    if [ -z "${TELEM_PAYLOAD}" ]; then
+	TELEM_PAYLOAD=$2
+    else
+	TELEM_PAYLOAD="${TELEM_PAYLOAD}\n$2"
+    fi
+}
+
+telem_send_record()
+{
+    # Log via telemetrics if available
+    if [ -x /usr/bin/telem-record-gen ]; then
+        echo -e "${TELEM_PAYLOAD}" | /usr/bin/telem-record-gen -s $TELEM_SEVERITY -c "org.opensuse/health/boot"
+	# Communiction is async, give daemon time to send data
+	# before we reboot
+	test "$1" = "1" && sleep 2
+    fi
 }
 
 save_working_snapshot()
@@ -33,7 +78,8 @@ rollback()
     . ${STATE_FILE}
     btrfs subvolume set-default ${LAST_WORKING_BTRFS_ID} /.snapshots
     if [ $? -ne 0 ]; then
-        logger -s -p user.crit "ERROR: btrfs set-default $BTRFS_ID failed!"
+        create_log user.crit "ERROR: btrfs set-default $BTRFS_ID failed!"
+	telem_send_playload 1
         exit 1
     fi
 }
@@ -42,7 +88,7 @@ stop_services()
 {
     # stop all services
     for script in ${PLUGINDIR}/* ; do
-	${script} stop 
+	${script} stop
     done
 }
 
@@ -50,7 +96,7 @@ error_decission()
 {
     if [ ! -f ${STATE_FILE} ]; then
 	# No state file, no successfull boot
-	logger -s -p user.emerg "Machine didn't come up correct, stop services"
+	create_log user.emerg "Machine didn't come up correct, stop services"
 	stop_services
 	return
     fi
@@ -60,17 +106,19 @@ error_decission()
   set_btrfs_id
 
   if [ ${LAST_WORKING_BTRFS_ID} -ne ${BTRFS_ID} ]; then
-      logger -s -p user.alert "Machine didn't come up correct, do a rollback"
+      create_log user.alert "Machine didn't come up correct, do a rollback"
       rollback
       if [ $? -eq 0 ]; then
+	  telem_send_record 1
 	  systemctl reboot
       fi
   elif [ ! -f ${REBOOTED_STATE} ]; then
-      logger -s -p user.crit "Machine didn't come up correct, try a reboot"
+      create_log user.crit "Machine didn't come up correct, try a reboot"
       echo `date "+%Y-%m-%d %H:%M"` > ${REBOOTED_STATE}
+      telem_send_record 1
       systemctl reboot
   else
-      logger -s -p user.emerg "Machine didn't come up correct, stop services"
+      create_log user.emerg "Machine didn't come up correct, stop services"
       stop_services
   fi
 }
@@ -84,7 +132,7 @@ FAILED=0;
 for script in ${PLUGINDIR}/* ; do
   ${script} check
   if [ $? -ne 0 ]; then
-      logger -s -p user.crit "ERROR: \"${script} check\" failed"
+      create_log user.crit "ERROR: \"${script} check\" failed"
       FAILED=1
   fi
 done
@@ -92,12 +140,17 @@ done
 if [ ${FAILED} -ne 0 ]; then
     echo "Health check failed!"
     error_decission
+    telem_send_record 0
     exit 1
 else
     echo "Health check passed"
     # Save good working state and remove old rebooted state file
     save_working_snapshot
-    rm -rf ${REBOOTED_STATE}
+    if [ -f ${REBOOTED_STATE} ]; then
+        create_log user.info "Health check passed after reboot"
+        rm -rf ${REBOOTED_STATE}
+    fi
 fi
 
+telem_send_record 0
 exit 0

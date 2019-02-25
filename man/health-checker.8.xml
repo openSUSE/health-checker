@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
-                   "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd">
+"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd">
 
 <!--  \-*\- nroff \-*\- -->
-<!--  Copyright 2017 Thorsten Kukuk &lt;kukuk@suse.de&gt; -->
+<!--  Copyright 2017, 2019 Thorsten Kukuk &lt;kukuk@suse.de&gt; -->
 
 <!--  This program is free software; you can redistribute it and/or -->
 <!--  modify it under the terms of the GNU General Public License as -->
@@ -59,35 +59,42 @@
   </refsynopsisdiv>
 
 
-<refsect1 id='description'><title>DESCRIPTION</title>
-<para><emphasis remap='B'>health-checker</emphasis>
-checks during boot, if the system is coming up correct.
-In error case, the action depends on what did happen before. If this is the
-first boot after a transactional update, an automatic rollback to the last
-known working snapshot is made. If the snapshot was already rebooted
-successfull before, a reboot is tried. If this does not help, some sevices are
-shutdown and an admin has to repair the system.
-</para>
-<para>
-If the boot was successfull, the current snapshot is marked as known to be
-working.
-</para>
-<para>Plugins are used for performing the tests and new plugins can be
-written. They are stored in the
-<filename>/usr/lib/health-checker</filename> directory and executed either
-with the option <command>check</command> or <command>stop</command>.
-If called with "check", the plugin should verify that the service works and
-return 0, else 1. If one plugin returns "1", <command>health-check</command>
-will evaluate what to do. If neither a rollback or reboot is usefull, all
-plugins will be called with the "stop" option. In this case, the plugins
+  <refsect1 id='description'><title>DESCRIPTION</title>
+  <para><emphasis remap='B'>health-checker</emphasis>
+  checks during boot, if the system is coming up correct.
+  In error case, the action depends on what did happen before. If this is the
+  first boot after a transactional update, an automatic rollback to the last
+  known working snapshot is made. If the snapshot was already rebooted
+  successfull before, a reboot is tried. If this does not help, some sevices
+  are shutdown and an admin has to repair the system.
+  </para>
+  <para>
+    If the boot was successfull, the current snapshot is marked as known to be
+    working.
+  </para>
+  <para>Plugins are used for performing the tests and new plugins can be
+  written. They are stored in the
+  <filename>/usr/lib/health-checker</filename> directory and executed either
+  with the option <command>check</command> or <command>stop</command>.
+  If called with "check", the plugin should verify that the service works and
+  return 0, else 1. If one plugin returns "1", <command>health-check</command>
+  will evaluate what to do. If neither a rollback or reboot is usefull, all
+  plugins will be called with the "stop" option. In this case, the plugins
 should shutdown the services are far as possible and usefull.
-</para>
-</refsect1>
+  </para>
+  </refsect1>
 
-<refsect1 id='see_also'><title>SEE ALSO</title>
-<para><citerefentry><refentrytitle>transactional-update</refentrytitle><manvolnum>8</manvolnum></citerefentry>
-</para>
-</refsect1>
+  <refsect1 id='telemetry'><title>TELEMETRY</title>
+  <para>
+    If <citerefentry><refentrytitle>telem-record-gen</refentrytitle><manvolnum>1</manvolnum></citerefentry>
+    is installed telemetry events are created additional to logging with
+    <citerefentry><refentrytitle>syslog</refentrytitle><manvolnum>3</manvolnum></citerefentry>.
+  </para>
+  </refsect1>
 
+  <refsect1 id='see_also'><title>SEE ALSO</title>
+  <para><citerefentry><refentrytitle>transactional-update</refentrytitle><manvolnum>8</manvolnum></citerefentry>
+  </para>
+  </refsect1>
 
 </refentry>
