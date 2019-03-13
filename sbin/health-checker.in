@@ -152,5 +152,9 @@ else
     fi
 fi
 
+
+if [ -z "${TELEM_PAYLOAD}" ]; then
+    TELEM_PAYLOAD="Health check passed"
+fi
 telem_send_record 0
 exit 0
