@@ -1,5 +1,5 @@
 [Unit]
-Description=CaaSP Health Checker
+Description=MicroOS Health Checker
 After=cloud-final.service
 After=crio.service
 After=etcd.service

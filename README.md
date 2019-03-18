@@ -1,6 +1,6 @@
 # health-checker
 
-Check the state of a SUSE CaaSP system after a reboot.
+Check the state of a openSUSE MicroOS system after a reboot.
 
 
 ## How does this work?

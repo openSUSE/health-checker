@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# plugin to test basic functionality of CaaSP health checker
+# plugin to test basic functionality of MicroOS health checker
 #
 
 run_checks() {
