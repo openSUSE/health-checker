@@ -3,7 +3,7 @@
 run_checks() {
     # Check first if it is installed:
     rpm -q --quiet crio
-    test $? -ne && return
+    test $? -ne 0 && return
 
     # ignore if crio is not enabled.
     systemctl is-enabled -q crio
