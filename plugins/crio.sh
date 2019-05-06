@@ -2,7 +2,7 @@
 
 run_checks() {
     # Check first if it is installed:
-    rpm -q --quiet crio
+    rpm -q --quiet cri-o
     test $? -ne 0 && return
 
     # ignore if crio is not enabled.
