@@ -11,7 +11,9 @@ if [ -z "\${chosen}" -a -z "\${boot_once}" ]; then
     # This prevents getting stuck in a loop when booting an entry that
     # doesn't support this flag yet.
     health_checker_flag=0
-    save_env -f "\${env_block}" health_checker_flag
+    if [ "\${env_block}" ] ; then
+      save_env -f "\${env_block}" health_checker_flag
+    fi
     # Try to mount /var/lib/misc from know subvolume locations
     btrfs-mount-subvol (\${root}) /var /@/var
     btrfs-mount-subvol (\${root}) /var/lib/misc /@/var/lib/misc
