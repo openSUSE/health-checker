@@ -16,11 +16,13 @@ PLUGINDIR=@PLUGINDIR@
 TELEM_SEVERITY=1
 TELEM_PAYLOAD=""
 
-BTRFS_ID=0
+BTRFS_ID_DEFAULT=0
+BTRFS_ID_CURRENT=0
 
 set_btrfs_id()
 {
-    BTRFS_ID=`btrfs subvolume get-default / | awk '{print $2}'`
+    BTRFS_ID_DEFAULT=`btrfs subvolume get-default / | awk '{print $2}'`
+    BTRFS_ID_CURRENT=`findmnt --output OPTIONS --noheadings / | sed -e 's|.*subvolid=\([0-9]\+\).*|\1|g'`
 }
 
 create_log()
@@ -70,7 +72,9 @@ save_working_snapshot()
 {
     set_btrfs_id
 
-    echo "LAST_WORKING_BTRFS_ID=${BTRFS_ID}" > $STATE_FILE
+    if [ ${BTRFS_ID_DEFAULT} -eq ${BTRFS_ID_CURRENT} ]; then
+	echo "LAST_WORKING_BTRFS_ID=${BTRFS_ID_DEFAULT}" > $STATE_FILE
+    fi
 }
 
 rollback()
@@ -78,7 +82,7 @@ rollback()
     . ${STATE_FILE}
     btrfs subvolume set-default ${LAST_WORKING_BTRFS_ID} /.snapshots
     if [ $? -ne 0 ]; then
-        create_log user.crit "ERROR: btrfs set-default $BTRFS_ID failed!"
+        create_log user.crit "ERROR: btrfs set-default $BTRFS_ID_DEFAULT failed!"
 	telem_send_playload 1
         exit 1
     fi
@@ -105,7 +109,11 @@ error_decission()
 
   set_btrfs_id
 
-  if [ ${LAST_WORKING_BTRFS_ID} -ne ${BTRFS_ID} ]; then
+  if [ ${BTRFS_ID_DEFAULT} -ne ${BTRFS_ID_CURRENT} ]; then
+      # Don't tamper with system if not booted into default snapshot
+      create_log user.alert "Machine didn't come up correct, trying rebooting into default snapshot"
+      systemctl reboot
+  elif [ ${LAST_WORKING_BTRFS_ID} -ne ${BTRFS_ID_DEFAULT} ]; then
       create_log user.alert "Machine didn't come up correct, do a rollback"
       rollback
       if [ $? -eq 0 ]; then
