@@ -89,7 +89,7 @@ info "health checker emergency mode"
 # Make sure we know root device
 [ -z "$root" ] && root=$(getarg root=)
 
-if getargbool 1 rd.shell -d -y rdshell || getarg rd.break -d rdbreak; then
+if getargbool 0 rd.break; then
   true # manual invocation of emergency shell, doing nothing
 elif [ -n "$root" -a -z "${root%%block:*}" ]; then
 
