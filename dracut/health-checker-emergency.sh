@@ -9,14 +9,23 @@
 # - if reboot does not help, log this
 #
 
-STATE_FILE=/var/lib/misc/health-check.state
-REBOOTED_STATE=/var/lib/misc/health-check.rebooted
+HC_ROOT_MOUNT="/run/health-checker"
+STATE_FILE="${HC_ROOT_MOUNT}/var/lib/misc/health-check.state"
+REBOOTED_STATE="${HC_ROOT_MOUNT}/var/lib/misc/health-check.rebooted"
 
 BTRFS_ID=0
 
 set_btrfs_id()
 {
-    BTRFS_ID=`btrfs subvolume get-default ${NEWROOT} | awk '{print $2}'`
+    BTRFS_ID=`btrfs subvolume get-default "${HC_ROOT_MOUNT}" | awk '{print $2}'`
+}
+
+umount_and_reboot()
+{
+  if findmnt "${HC_ROOT_MOUNT}" > /dev/null; then
+    umount --recursive "${HC_ROOT_MOUNT}"
+  fi
+  systemctl reboot --force
 }
 
 clear_and_reboot()
@@ -33,14 +42,13 @@ clear_and_reboot()
 try_grub_recovery()
 {
   warn "Trying recovery via GRUB2 snapshot mechanism."
-  systemctl reboot --force
+  umount_and_reboot
 }
 
 rollback()
 {
     . ${STATE_FILE}
-    mount -o remount,rw ${NEWROOT}
-    btrfs subvolume set-default ${LAST_WORKING_BTRFS_ID} ${NEWROOT}
+    btrfs subvolume set-default ${LAST_WORKING_BTRFS_ID} "${HC_ROOT_MOUNT}"
     if [ $? -ne 0 ]; then
         warn "ERROR: btrfs set-default $BTRFS_ID failed!"
         return 1
@@ -96,18 +104,22 @@ elif [ -n "$root" -a -z "${root%%block:*}" ]; then
   info "my_root device exist"
 
   # Try to mount health-checker data
-  mkdir -p /run/health-checker
-  mkdir -p /var/lib
-  if mount -t btrfs -o subvol=@/var/lib/misc "${my_root}" /run/health-checker; then
-    ln -s /run/health-checker -t /var/lib/misc
-  elif mount -t btrfs -o subvol=@/var "${my_root}" /run/health-checker; then
-    ln -s /run/health-checker/var/lib/misc -t /var/lib/misc
+  mkdir -p "${HC_ROOT_MOUNT}"
+  if mount "${my_root}" "${HC_ROOT_MOUNT}"; then
+    info "my_root mounted successfully"
+    state_dev_cands=("/var/lib/misc" "/var")
+    for cand in "${state_dev_cands[@]}"; do
+      findmnt --first-only --direction backward --noheadings --tab-file "${HC_ROOT_MOUNT}/etc/fstab" "${cand}" | while read _m _d _t _o; do
+        mkdir -p "${HC_ROOT_MOUNT}/${cand}"
+        mount -t ${_t} -o ${_o} ${_d} "${HC_ROOT_MOUNT}/${cand}"
+      done
+    done
   fi
 
   # Try to recover somehow
-  if [ -e /var/lib/misc ]; then
+  if [ -e "${HC_ROOT_MOUNT}/var/lib/misc" ]; then
     error_decission
-    umount /run/health-checker ||:
+    umount --recursive "${HC_ROOT_MOUNT}" ||:
   else
     warn "Mounting health-checker data failed."
     try_grub_recovery
