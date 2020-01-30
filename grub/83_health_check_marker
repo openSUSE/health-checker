@@ -2,7 +2,7 @@
 set -e
 
 # GRUB's grub2_mkconfig script currently has some serious limitations, one of 
-# them beeing not providing a way to modify anything done by previous scripts;
+# them being not providing a way to modify anything done by previous scripts;
 # unfortunately health_checker requires additional commands to be executed
 # when selecting a boot entry (which is usually created by 10_linux), so as a
 # horrible workaround the temporary output will be modified by a sed script.
@@ -19,12 +19,11 @@ if [ -f "$cfgfile" ]; then
   lines_to_add+='\t\tsave_env -f "${env_block}" health_checker_flag\n'
   lines_to_add+='\tfi'
 
-  # The sed expression below will inject contents into the opened file; the
-  # original process will not notice that and will continue writing from the
-  # last position. To set the pointer to the correct posision add the number
-  # of characters which will be injected to the file (they won't appear in
-  # the final output).
-  echo -n -e $lines_to_add
+  # The cp expression below will copy the new contents into the opened file;
+  # the original process would not notice that and will continue writing from
+  # the last position. To avoid that add the append flag to stdout to make sure
+  # every write operation appends to the file.
+  dd oflag=append count=0 status=none
 
   sed 's/^\(menuentry .*\)/\1'"${lines_to_add}"'/' "$cfgfile" > "$cfgfile".health_checker
   cp "$cfgfile".health_checker "$cfgfile"
