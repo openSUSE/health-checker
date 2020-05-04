@@ -2,7 +2,7 @@
 # Copyright (c) 2016 Thorsten Kukuk <kukuk@suse.de>
 #
 
-systemddir = @SYSTEMDDIR@
+systemddir = $(systemdsystemunitdir)
 
 systemd_DATA = health-checker.service 
 

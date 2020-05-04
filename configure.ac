@@ -7,17 +7,10 @@ AC_PREFIX_DEFAULT(/usr)
 AC_SUBST(PACKAGE)
 AC_SUBST(VERSION)
 
-test "${prefix}" = "NONE" && prefix="/usr"
-test "${exec_prefix}" = "NONE" && exec_prefix="/usr"
-test ${libexecdir} = '${exec_prefix}/libexec' && libexecdir="${exec_prefix}/lib"
-TMPFILESDIR=${libexecdir}/tmpfiles.d
-SYSTEMDDIR=${libexecdir}/systemd/system
-PLUGINDIR=${libexecdir}/health-checker
-DRACUTDIR=${libexecdir}/dracut
-AC_SUBST(TMPFILESDIR)
-AC_SUBST(SYSTEMDDIR)
-AC_SUBST(PLUGINDIR)
-AC_SUBST(DRACUTDIR)
+PKG_CHECK_VAR([systemdsystemunitdir], [systemd], [systemdsystemunitdir], [],
+	[AC_MSG_ERROR([Could not determine value for 'systemdsystemunitdir' - is the 'systemd.pc' file installed?])])
+PKG_CHECK_VAR([dracutmodulesdir], [dracut], [dracutmodulesdir], [],
+	[AC_MSG_ERROR([Could not determine value for 'dracutmodulesdir' - is the 'dracut.pc' file installed?])])
 
 AC_PROG_INSTALL
 AC_PROG_LN_S
