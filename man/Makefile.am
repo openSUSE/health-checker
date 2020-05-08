@@ -33,7 +33,7 @@ define html-alias
 endef
 
 health-checker.index.xml: make-man-index.py $(XMLS)
-	python $(srcdir)/make-man-index.py $(srcdir)/$@ $(XMLS)
+	python3 $(srcdir)/make-man-index.py $(srcdir)/$@ $(XMLS)
 
 health-checker.index.html: health-checker.index.xml custom-html.xsl
 	$(XSLTPROC) -o $(srcdir)/$@ --path $(srcdir) $(XSLTPROC_FLAGS_HTML) $<
