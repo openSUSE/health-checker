@@ -11,6 +11,6 @@ CLEANFILES = *~
 
 M4_FILES = m4/jh_path_xml_catalog.m4
 
-EXTRA_DIST = ChangeLog $(M4_FILES) README.md
+EXTRA_DIST = $(M4_FILES) README.md
 
 ACLOCAL_AMFLAGS = -I m4
