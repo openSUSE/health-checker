@@ -74,7 +74,7 @@
   </para>
   <para>Plugins are used for performing the tests and new plugins can be
   written. They are stored in the
-  <filename>/usr/lib/health-checker</filename> directory and executed either
+  <filename>@PLUGINDIR@/health-checker</filename> directory and executed either
   with the option <command>check</command> or <command>stop</command>.
   If called with "check", the plugin should verify that the service works and
   return 0, else 1. If one plugin returns "1", <command>health-check</command>
