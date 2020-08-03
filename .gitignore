@@ -33,3 +33,5 @@ man/health-checker.service.8
 man/*.html
 man/*.pyc
 sbin/health-checker
+man/__pycache__/
+man/health-checker.8.xml
