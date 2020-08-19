@@ -2,6 +2,12 @@ issue-generator NEWS -- history of user-visible changes.
 
 Copyright (C) 2017-2020 Thorsten Kukuk et al.
 
+Version 1.4
+* Add checks for /tmp and systemd-logind
+* Transition system into emergency mode on repeated failures to prevent
+  random jobs from modifying the broken system
+* Build system cleanup
+
 Version 1.3.4
 * Really fix plugindir replacement in configure.ac script
 
