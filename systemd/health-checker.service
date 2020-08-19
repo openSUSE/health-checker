@@ -5,6 +5,7 @@ After=crio.service
 After=etcd.service
 After=kubelet.service
 After=rebootmgr.service
+After=systemd-logind.service
 Wants=local-fs.target
 
 [Service]
