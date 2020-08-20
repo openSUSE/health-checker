@@ -126,8 +126,9 @@ error_decission()
       telem_send_record 1
       systemctl reboot
   else
-      create_log user.emerg "Machine didn't come up correct, stop services"
+      create_log user.emerg "Machine didn't come up correct, starting emergency shell"
       stop_services
+      systemctl start emergency.target
   fi
 }
 
