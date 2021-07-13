@@ -13,6 +13,7 @@
 STATE_FILE=/var/lib/misc/health-check.state
 REBOOTED_STATE=/var/lib/misc/health-check.rebooted
 PLUGINDIR=@PLUGINDIR@
+USR_LOCAL_PLUGINDIR=/usr/local/libexec/health-checker
 TELEM_SEVERITY=1
 TELEM_PAYLOAD=""
 
@@ -91,8 +92,10 @@ rollback()
 stop_services()
 {
     # stop all services
-    for script in ${PLUGINDIR}/* ; do
-	${script} stop
+    for script in ${PLUGINDIR}/* ${USR_LOCAL_PLUGINDIR}/*; do
+        if [ -f ${script} ]; then
+            ${script} stop
+        fi
     done
 }
 
@@ -138,12 +141,14 @@ grub2-editenv - set health_checker_flag=0
 
 echo "Starting health check"
 FAILED=0;
-for script in ${PLUGINDIR}/* ; do
-  ${script} check
-  if [ $? -ne 0 ]; then
-      create_log user.crit "ERROR: \"${script} check\" failed"
-      FAILED=1
-  fi
+for script in ${PLUGINDIR}/* ${USR_LOCAL_PLUGINDIR}/* ; do
+   if [ -f ${script} ]; then
+       ${script} check
+       if [ $? -ne 0 ]; then
+           create_log user.crit "ERROR: \"${script} check\" failed"
+           FAILED=1
+       fi
+   fi
 done
 
 if [ ${FAILED} -ne 0 ]; then

@@ -4,6 +4,8 @@
 # Author: Thorsten Kukuk <kukuk@suse.de>
 #
 
+plugindir = ${libexecdir}/health-checker
+
 CLEANFILES = $(MANS) $(DATA) health-checker.index.xml
 
 EXTRA_DIST = $(MANS) $(DATA) custom-html.xsl health-checker.8.xml.in \
