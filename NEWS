@@ -2,6 +2,9 @@ issue-generator NEWS -- history of user-visible changes.
 
 Copyright (C) 2017-2020 Thorsten Kukuk et al.
 
+Version 1.5
+* Added /usr/local/libexec/health-checker for user defined plugins.
+
 Version 1.4
 * Add checks for /tmp and systemd-logind
 * Transition system into emergency mode on repeated failures to prevent
