@@ -32,6 +32,6 @@ fi
 
 cat << EOF
 # Prevent infinite waiting for disk if drivers in initrd are broken
-extra_cmdline="\${extra_cmdline} rd.timeout=60"
+extra_cmdline="\${extra_cmdline} rd.timeout=60 rd.retry=45"
 EOF
 
