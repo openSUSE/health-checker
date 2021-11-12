@@ -99,10 +99,6 @@ elif [ -n "$root" -a -z "${root%%block:*}" ]; then
 
   info "my_root device: ${my_root}"
 
-  test -e "${my_root}" || return
-
-  info "my_root device exist"
-
   # Try to mount health-checker data
   mkdir -p "${HC_ROOT_MOUNT}"
   if mount "${my_root}" "${HC_ROOT_MOUNT}"; then
@@ -114,6 +110,9 @@ elif [ -n "$root" -a -z "${root%%block:*}" ]; then
         mount -t ${_t} -o ${_o} ${_d} "${HC_ROOT_MOUNT}/${cand}"
       done
     done
+  else
+    warn "Mounting root device failed."
+    try_grub_recovery
   fi
 
   # Try to recover somehow
