@@ -2,6 +2,14 @@ issue-generator NEWS -- history of user-visible changes.
 
 Copyright (C) 2017-2020 Thorsten Kukuk et al.
 
+Version 1.6
+* Adapt rd.retry to also trigger initqueue timeout tasks
+  [gh#kubic-project/health-checker#11]
+* Reboot system and let the GRUB health-checker part try to find a
+  working initrd if root file system could not be mounted - instead of
+  ending up in an emergency shell
+* Correctly declare Bash scripts as such
+
 Version 1.5
 * Added /usr/local/libexec/health-checker for user defined plugins.
 
