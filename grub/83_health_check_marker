@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 # GRUB's grub2_mkconfig script currently has some serious limitations, one of 

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # if we enter emergency mode, do:
 # - if it's not even possible to mount the root file system reboot and try to
