@@ -81,6 +81,7 @@ save_working_snapshot()
 rollback()
 {
     . ${STATE_FILE}
+    mount -o remount,rw /.snapshots
     btrfs subvolume set-default ${LAST_WORKING_BTRFS_ID} /.snapshots
     if [ $? -ne 0 ]; then
         create_log user.crit "ERROR: btrfs set-default $BTRFS_ID_DEFAULT failed!"
