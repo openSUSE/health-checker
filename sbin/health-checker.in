@@ -3,11 +3,11 @@
 #
 # Check health state of the system
 #
-# Check, if important services are started and running. If this is not the
+# Check whether important services are started and running. If this is not the
 # case:
 # - on first boot after update, rollback to old snapshot
 # - if it is not the first boot, reboot
-# - if reboot does not help, log this
+# - if reboot does not help, stop system before further damage is done
 #
 
 STATE_FILE=/var/lib/misc/health-check.state
@@ -63,8 +63,8 @@ telem_send_record()
     # Log via telemetrics if available
     if [ -x /usr/bin/telem-record-gen ]; then
         echo -e "${TELEM_PAYLOAD}" | /usr/bin/telem-record-gen -s $TELEM_SEVERITY -c "org.opensuse/health/boot"
-	# Communiction is async, give daemon time to send data
-	# before we reboot
+	# Communication is async, give daemon time to send data
+	# before reboot
 	test "$1" = "1" && sleep 2
     fi
 }
@@ -81,17 +81,18 @@ save_working_snapshot()
 rollback()
 {
     . ${STATE_FILE}
+    mount -o remount,rw /.snapshots
     btrfs subvolume set-default ${LAST_WORKING_BTRFS_ID} /.snapshots
     if [ $? -ne 0 ]; then
         create_log user.crit "ERROR: btrfs set-default $BTRFS_ID_DEFAULT failed!"
-	telem_send_playload 1
+	telem_send_payload 1
         exit 1
     fi
 }
 
 stop_services()
 {
-    # stop all services
+    # Stop all services
     for script in ${PLUGINDIR}/* ${USR_LOCAL_PLUGINDIR}/*; do
         if [ -f ${script} ]; then
             ${script} stop
@@ -102,8 +103,8 @@ stop_services()
 error_decission()
 {
     if [ ! -f ${STATE_FILE} ]; then
-	# No state file, no successfull boot
-	create_log user.emerg "Machine didn't come up correct, stop services"
+	# No state file, no successful boot
+	create_log user.emerg "Machine didn't come up correctly, stopping services"
 	stop_services
 	return
     fi
@@ -114,22 +115,22 @@ error_decission()
 
   if [ ${BTRFS_ID_DEFAULT} -ne ${BTRFS_ID_CURRENT} ]; then
       # Don't tamper with system if not booted into default snapshot
-      create_log user.alert "Machine didn't come up correct, trying rebooting into default snapshot"
+      create_log user.alert "Machine didn't come up correctly, trying rebooting into default snapshot"
       systemctl reboot
   elif [ ${LAST_WORKING_BTRFS_ID} -ne ${BTRFS_ID_DEFAULT} ]; then
-      create_log user.alert "Machine didn't come up correct, do a rollback"
+      create_log user.alert "Machine didn't come up correctly, do a rollback"
       rollback
       if [ $? -eq 0 ]; then
 	  telem_send_record 1
 	  systemctl reboot
       fi
   elif [ ! -f ${REBOOTED_STATE} ]; then
-      create_log user.crit "Machine didn't come up correct, try a reboot"
+      create_log user.crit "Machine didn't come up correctly, trying a reboot"
       echo `date "+%Y-%m-%d %H:%M"` > ${REBOOTED_STATE}
       telem_send_record 1
       systemctl reboot
   else
-      create_log user.emerg "Machine didn't come up correct, starting emergency shell"
+      create_log user.emerg "Machine didn't come up correctly, starting emergency shell"
       stop_services
       systemctl start emergency.target
   fi
