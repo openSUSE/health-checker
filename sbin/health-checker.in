@@ -18,11 +18,13 @@ TELEM_SEVERITY=1
 TELEM_PAYLOAD=""
 
 BTRFS_ID_DEFAULT=0
+SNAPSHOT_DEFAULT=""
 BTRFS_ID_CURRENT=0
 
 set_btrfs_id()
 {
     BTRFS_ID_DEFAULT=`btrfs subvolume get-default / | awk '{print $2}'`
+    SNAPSHOT_DEFAULT="`btrfs subvolume get-default / | cut -d ' ' -f 9-`"
     BTRFS_ID_CURRENT=`findmnt --output OPTIONS --noheadings / | sed -e 's|.*subvolid=\([0-9]\+\).*|\1|g'`
 }
 
@@ -75,6 +77,7 @@ save_working_snapshot()
 
     if [ ${BTRFS_ID_DEFAULT} -eq ${BTRFS_ID_CURRENT} ]; then
 	echo "LAST_WORKING_BTRFS_ID=${BTRFS_ID_DEFAULT}" > $STATE_FILE
+	echo "LAST_WORKING_SNAPSHOT=${SNAPSHOT_DEFAULT}" >> $STATE_FILE
     fi
 }
 

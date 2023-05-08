@@ -18,12 +18,24 @@ if [ -z "\${chosen}" -a -z "\${boot_once}" ]; then
     btrfs-mount-subvol (\${root}) /var /@/var
     btrfs-mount-subvol (\${root}) /var/lib/misc /@/var/lib/misc
 
+    if [ -e /var/lib/misc/health-checker.state ]; then
+      source /var/lib/misc/health-checker.state
+      if [ -n \${LAST_WORKING_SNAPSHOT} ]; then
+        LAST_WORKING_SNAPSHOTS=\${LAST_WORKING_SNAPSHOT}
+      fi
+    fi
+
+    # Backwards compatibility (for state file created with old
+    # health-checker versions):
     # Due to boo#1048088 btrfs-list-subvols currently doesn't give a list of
     # subvolumes, so it's not possible to map
     # /var/lib/misc/health-checker.state to a snapshot directory; use
     # transactional-update state file as a workaround.
-    if [ -e /var/lib/misc/transactional-update.state ]; then
+    if [ -z \${LAST_WORKING_SNAPSHOTS} -a -e /var/lib/misc/transactional-update.state ]; then
       source /var/lib/misc/transactional-update.state
+    fi
+
+    if [ -n "\${LAST_WORKING_SNAPSHOTS}" ]; then
       btrfs-mount-subvol (\$root) /.snapshots @/.snapshots
       for snapshot in \${LAST_WORKING_SNAPSHOTS}; do
         if [ -e "/.snapshots/\${snapshot}/grub-snapshot.cfg" ]; then
