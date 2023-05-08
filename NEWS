@@ -2,6 +2,12 @@ issue-generator NEWS -- history of user-visible changes.
 
 Copyright (C) 2017-2020 Thorsten Kukuk et al.
 
+Version 1.8
+* Don't rely on t-u's good states in GRUB
+  With the introduction of the "apply" command in transactional-update the
+  snapshot id's cannnot be reused any more. Due to that store the snapshot
+  number separately now, too.
+
 Version 1.7
 * Before rollback make sure /.snapshots is mounted rw
 * Fix typos and spelling errors. Note: in case an application is parsing
