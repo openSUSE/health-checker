@@ -2,7 +2,7 @@
 
 run_checks() {
 
-    MOUNTS=`grep "btrfs.*subvol=" /etc/fstab | awk '{print $2}' | sed -e 's|^/||g' -e 's|-|\\\x2d|g' -e 's|\.|\\\x2e|g' -e 's|/|-|g'`
+    MOUNTS=`grep "btrfs.*subvol=" /etc/fstab | awk '{print $2}' | sed -e 's|^/||g' -e 's|-|\\\x2d|g' -e 's|^\.|\\\x2e|g' -e 's|/|-|g'`
     for i in ${MOUNTS}; do
         systemctl is-failed -q $i.mount
         test $? -ne 1 && exit 1
