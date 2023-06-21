@@ -1,7 +1,7 @@
 #!/bin/bash
 
 run_checks() {
-    MOUNTS=`grep "btrfs.*subvol=" /etc/fstab | awk '{print $2}'`
+    MOUNTS=$(grep "btrfs.*subvol=" /etc/fstab | awk '!/^[[:space:]]*#/{print $2}')
     for i in ${MOUNTS}; do
         path=$(systemd-escape -p "$(echo -e ${i})")
         systemctl is-failed -q "${path}.mount"
