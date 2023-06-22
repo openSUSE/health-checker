@@ -1,9 +1,9 @@
 #!/bin/bash
 
 run_checks() {
-    MOUNTS=$(grep "btrfs.*subvol=" /etc/fstab | awk '!/^[[:space:]]*#/{print $2}')
+    MOUNTS=$(findmnt --types btrfs --options subvol --fstab --output target --raw --noheadings)
     for i in ${MOUNTS}; do
-        path=$(systemd-escape -p "$(echo -e ${i})")
+        path=$(systemd-escape -p -- "$(echo -e ${i})")
         systemctl is-failed -q "${path}.mount"
         test $? -ne 1 && exit 1
     done
