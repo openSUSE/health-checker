@@ -16,7 +16,7 @@ return value `1`, else `0`.
 If everyting was fine, the script will create a
 `/var/lib/misc/health-checker.state` file with the number of the current,
 working btrfs subvolume with the root filesystem.
-If a plugin reports an error condidtion, the `health-checker` script will take
+If a plugin reports an error condition, the `health-checker` script will take
 following actions:
 
 1. If the current btrfs root subvolume is not identical with the last known
