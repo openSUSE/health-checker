@@ -41,7 +41,7 @@ clear_and_reboot()
 
 try_grub_recovery()
 {
-  warn "Trying recovery via GRUB2 snapshot mechanism."
+  warn "WARN: Trying recovery via GRUB2 snapshot mechanism."
   umount_and_reboot
 }
 
@@ -58,8 +58,8 @@ rollback()
 error_decission()
 {
     if [ ! -f ${STATE_FILE} ]; then
-        # No state file, no successfull boot, start emergency shell
-	info "No successfull boot before"
+        # No state file, no successful boot, start emergency shell
+	info "INFO: No successful previous boot."
         return 0
     fi
 
@@ -68,23 +68,23 @@ error_decission()
   set_btrfs_id
 
   if [ ${LAST_WORKING_BTRFS_ID} -ne ${BTRFS_ID} ]; then
-      warn "Machine didn't come up correct, do a rollback"
+      warn "WARN: Machine didn't come up correctly, doing a rollback."
       rollback
       if [ $? -eq 0 ]; then
         clear_and_reboot
       fi
   elif [ ! -f ${REBOOTED_STATE} ]; then
-      warn "Machine didn't come up correct, try a reboot"
+      warn "WARN: Machine didn't come up correctly, trying a reboot."
       echo `date "+%Y-%m-%d %H:%M"` > ${REBOOTED_STATE}
       clear_and_reboot
   else
-      warn "Machine didn't come up correct, start emergency shell"
+      warn "WARN: Machine didn't come up correctly, starting emergency shell."
       return 0
   fi
 }
 
 
-info "health checker emergency mode"
+info "Health Checker Emergency Mode"
 
 # Make sure we know root device
 [ -z "$root" ] && root=$(getarg root=)
@@ -111,7 +111,7 @@ elif [ -n "$root" -a -z "${root%%block:*}" ]; then
       done
     done
   else
-    warn "Mounting root device failed."
+    warn "WARN: Mounting root device failed."
     try_grub_recovery
   fi
 
@@ -120,10 +120,10 @@ elif [ -n "$root" -a -z "${root%%block:*}" ]; then
     error_decission
     umount --recursive "${HC_ROOT_MOUNT}" ||:
   else
-    warn "Mounting health-checker data failed."
+    warn "WARN: Mounting health-checker data failed."
     try_grub_recovery
   fi
 else
-  warn "No root device found."
+  warn "WARN: No root device found."
   try_grub_recovery
 fi
