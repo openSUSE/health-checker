@@ -18,6 +18,8 @@ if ENABLE_REGENERATE_MAN
 health-checker.8.xml: health-checker.8.xml.in
 	sed 's|@PLUGINDIR@|${plugindir}|g' $(srcdir)/health-checker.8.xml.in > health-checker.8.xml
 
+health-checker.service.8: health-checker.8
+
 health-checker.8: health-checker.8.xml
 	$(XSLTPROC) -o $@ --path $(srcdir) --xinclude --nonet http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $<
 endif
