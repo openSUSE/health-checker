@@ -2,6 +2,14 @@ issue-generator NEWS -- history of user-visible changes.
 
 Copyright (C) 2017-2020 Thorsten Kukuk et al.
 
+Version 1.11
+* Add RPM database consistency plugin
+* Messages are printed with a severity prefix now
+* Fix various typos
+* Add missing rule for health-checker.service.8
+* Remove HTML output of man pages (the man pages are rendered by a
+  common service on manpages.opensuse.org now)
+
 Version 1.10
 * Fix Btrfs subvolume check if subvol starts with '-'
 
