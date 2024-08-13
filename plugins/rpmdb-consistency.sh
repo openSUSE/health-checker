@@ -9,6 +9,8 @@ case "$1" in
     check)
 	run_checks
 	;;
+    stop)
+	;;
     *)
 	echo "Usage: $0 {check|stop}"
 	exit 1
