@@ -14,7 +14,7 @@ responsible to check a special service or condition. For this, the plugin is
 called with the option *check*. If this fails, the plugin will exit with the
 return value `1`, else `0`.
 If everyting was fine, the script will create a
-`/var/lib/misc/health-checker.state` file with the number of the current,
+`/var/lib/misc/health-check.state` file with the number of the current,
 working btrfs subvolume with the root filesystem.
 If a plugin reports an error condition, the `health-checker` script will take
 following actions:
