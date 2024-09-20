@@ -2,7 +2,7 @@
 
 run_checks() {
 	# check rpm DB itself
-	rpm -D "%_rpmlock_path /run/rpmdb"  --verifydb
+	rpm -D "%_rpmlock_path /run/rpmdb" --verifydb
 	test $? -ne 0 && exit 1
 	# only rely on local/system repository for check
 	zypper --no-refresh --no-remote --non-interactive --quiet verify --dry-run
