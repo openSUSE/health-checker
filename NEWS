@@ -1,6 +1,6 @@
-issue-generator NEWS -- history of user-visible changes.
+health-checker NEWS -- history of user-visible changes.
 
-Copyright (C) 2017-2020 Thorsten Kukuk et al.
+Copyright (C) 2017-2024 Thorsten Kukuk et al.
 
 Version 1.12
 * Improve RPM database consistency check: Use rpm command directly to
