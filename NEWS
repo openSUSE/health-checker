@@ -2,6 +2,16 @@ issue-generator NEWS -- history of user-visible changes.
 
 Copyright (C) 2017-2020 Thorsten Kukuk et al.
 
+Version 1.12
+* Improve RPM database consistency check: Use rpm command directly to
+  prevent blocking when there is no zypper database yet or when the
+  admin intentionally broke dependencies
+* Implement missing stop argument for RPM database consistency plugin
+* Fixes typo in GRUB plugin so that the detection always used the
+  fallback file
+* Drop crio, etcd and kubelet plugins because the corresponding products
+  are EOL
+
 Version 1.11
 * Add RPM database consistency plugin
 * Messages are printed with a severity prefix now
