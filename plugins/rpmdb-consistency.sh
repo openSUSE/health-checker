@@ -1,8 +1,8 @@
 #!/bin/bash
 
 run_checks() {
-	zypper --no-refresh --quiet verify --dry-run
-	test $? -ne 0 && exit 1
+	# check rpm DB itself (need to override lock path, the default one is read-only)
+	rpm -D "%_rpmlock_path /run/rpmdb" --verifydb || exit 1
 }
 
 case "$1" in
