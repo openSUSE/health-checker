@@ -4,11 +4,14 @@ After=cloud-final.service
 After=rebootmgr.service
 After=systemd-logind.service
 Wants=local-fs.target
+Before=boot-complete.target
 
 [Service]
 Type=oneshot
+RemainAfterExit=yes
 ExecStart=/usr/sbin/health-checker
 RemainAfterExit=yes
 
 [Install]
+RequiredBy=boot-complete.target
 WantedBy=default.target

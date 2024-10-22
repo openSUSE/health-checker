@@ -8,8 +8,6 @@ AC_SUBST(VERSION)
 
 PKG_CHECK_VAR([systemdsystemunitdir], [systemd], [systemdsystemunitdir], [],
 	[AC_MSG_ERROR([Could not determine value for 'systemdsystemunitdir' - is the 'systemd.pc' file installed?])])
-PKG_CHECK_VAR([dracutmodulesdir], [dracut], [dracutmodulesdir], [],
-	[AC_MSG_ERROR([Could not determine value for 'dracutmodulesdir' - is the 'dracut.pc' file installed?])])
 
 AC_PROG_INSTALL
 AC_PROG_LN_S
@@ -31,4 +29,4 @@ JH_CHECK_XML_CATALOG([http://docbook.sourceforge.net/release/xsl/current/manpage
 AM_CONDITIONAL(ENABLE_REGENERATE_MAN, test x$enable_man != xno)
 
 AC_OUTPUT([Makefile sbin/Makefile man/Makefile systemd/Makefile \
-	plugins/Makefile dracut/Makefile grub/Makefile])
+	plugins/Makefile])
