@@ -4,7 +4,7 @@
 
 plugindir = ${libexecdir}/health-checker
 
-plugin_SCRIPTS = health-check-tester.sh etc-overlayfs.sh \
+plugin_SCRIPTS = etc-overlayfs.sh \
 	rebootmgr.sh btrfs-subvolumes-mounted.sh \
 	tmp.sh logind.sh rpmdb-consistency.sh
 

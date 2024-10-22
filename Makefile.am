@@ -5,7 +5,7 @@
 #
 AUTOMAKE_OPTIONS = 1.6 foreign check-news dist-xz
 #
-SUBDIRS = sbin man systemd plugins dracut grub
+SUBDIRS = sbin man systemd plugins
 
 CLEANFILES = *~
 
