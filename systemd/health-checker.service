@@ -11,6 +11,7 @@ Wants=local-fs.target
 [Service]
 Type=oneshot
 ExecStart=/usr/sbin/health-checker
+RemainAfterExit=yes
 
 [Install]
 WantedBy=default.target
