@@ -12,6 +12,7 @@
 
 PLUGINDIR=@PLUGINDIR@
 USR_LOCAL_PLUGINDIR=/usr/local/libexec/health-checker
+ETC_PLUGINDIR=/etc/health-checker
 TELEM_SEVERITY=1
 TELEM_PAYLOAD=""
 
@@ -120,7 +121,7 @@ fi
 
 echo "Starting health check"
 FAILED=0;
-for script in ${PLUGINDIR}/* ${USR_LOCAL_PLUGINDIR}/* ; do
+for script in ${PLUGINDIR}/* ${USR_LOCAL_PLUGINDIR}/* ${ETC_PLUGINDIR}/* ; do
    if [ -f ${script} ]; then
        ${script} check
        if [ $? -ne 0 ]; then
