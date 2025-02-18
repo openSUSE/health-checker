@@ -10,23 +10,10 @@
 # - if reboot does not help, stop system before further damage is done
 #
 
-STATE_FILE=/var/lib/misc/health-check.state
-REBOOTED_STATE=/var/lib/misc/health-check.rebooted
 PLUGINDIR=@PLUGINDIR@
 USR_LOCAL_PLUGINDIR=/usr/local/libexec/health-checker
 TELEM_SEVERITY=1
 TELEM_PAYLOAD=""
-
-BTRFS_ID_DEFAULT=0
-SNAPSHOT_DEFAULT=""
-BTRFS_ID_CURRENT=0
-
-set_btrfs_id()
-{
-    BTRFS_ID_DEFAULT=`btrfs subvolume get-default / | awk '{print $2}'`
-    SNAPSHOT_DEFAULT="`btrfs subvolume get-default / | cut -d ' ' -f 9-`"
-    BTRFS_ID_CURRENT=`findmnt --output OPTIONS --noheadings / | sed -e 's|.*subvolid=\([0-9]\+\).*|\1|g'`
-}
 
 create_log()
 {
@@ -71,77 +58,88 @@ telem_send_record()
     fi
 }
 
-save_working_snapshot()
-{
-    set_btrfs_id
-
-    if [ ${BTRFS_ID_DEFAULT} -eq ${BTRFS_ID_CURRENT} ]; then
-	echo "LAST_WORKING_BTRFS_ID=${BTRFS_ID_DEFAULT}" > $STATE_FILE
-	echo "LAST_WORKING_SNAPSHOT=${SNAPSHOT_DEFAULT}" >> $STATE_FILE
+systemd-bless-boot() {
+    if [ -x /usr/lib/systemd/systemd-bless-boot ]; then
+        /usr/lib/systemd/systemd-bless-boot "$@"
     fi
 }
 
-rollback()
+error_decision()
 {
-    . ${STATE_FILE}
-    mount -o remount,rw /.snapshots
-    btrfs subvolume set-default ${LAST_WORKING_BTRFS_ID} /.snapshots
-    if [ $? -ne 0 ]; then
-        create_log user.crit "ERROR: btrfs set-default $BTRFS_ID_DEFAULT failed!"
-	telem_send_payload 1
-        exit 1
-    fi
-}
-
-stop_services()
-{
-    # Stop all services
-    for script in ${PLUGINDIR}/* ${USR_LOCAL_PLUGINDIR}/*; do
-        if [ -f ${script} ]; then
-            ${script} stop
+    local status should_reboot entries default_entry selected_entry current_snapshot tries
+    read -r tries < /etc/kernel/tries
+    # systemd-bless-boot returns:
+    #   clean: boot counting is not in effect
+    #   good:  this entry booted fine. Since we are calling this at boot,
+    #          it shouldn't be possible to return "good"
+    #   bad:   this entry was already marked as bad after 3 tries
+    #   indeterminate: when an entry is neither good or bad, i.e.
+    #                  we are still trying to boot 3 times
+    status=$(systemd-bless-boot status)
+    # systemd-boot fill the EFI variables with the info we need
+    
+    # Get the entry depending on the current booted snapshot
+    current_snapshot=$(findmnt --output OPTIONS --noheadings / | sed -e 's|.*subvol=/@/.snapshots/\([0-9]\+\)/snapshot.*|\1|g')
+    # We do not want a file that does not exist
+    shopt -s nullglob
+    selected_entry=(/boot/efi/loader/entries/*[a-z]-"$current_snapshot"+[[:digit:]]-[[:digit:]].conf /boot/efi/loader/entries/*[a-z]-"$current_snapshot".conf)
+    selected_entry=$(basename "${selected_entry[0]}")
+    entries=(/boot/efi/loader/entries/*.conf)
+    entries=$(echo "${entries[@]}" | sort --reverse)
+    for entry in "${entries[@]}"; do
+        # If the entry has not been disabled by the boot counting
+        # (i.e. it ends in +0-n.conf)
+        if [[ "$entry" != *"+0-"* ||
+            # The selected entry gets its boot count decreased. If the boot count equals to
+            # $tries, it was still considered good, so it might be the default entry
+              "$entry" == "$selected_entry" && "$selected_entry" == *"+0-$tries.conf" ]]; then
+            default_entry=$(basename "$entry")
+            break
         fi
     done
-}
-
-error_decission()
-{
-    if [ ! -f ${STATE_FILE} ]; then
-	# No state file, no successful boot
-	create_log user.emerg "Machine didn't come up correctly, stopping services"
-	stop_services
-	return
+    should_reboot=0
+    # Do not reboot by default if the entry has been chosen manually or the reboot has
+    # been disabled in the kernel cmdline
+    # selected_entry contains the boot count, remove it before comparing it to the default entry
+    if grep "health-checker-reboot=force" /proc/cmdline || ( [ "$default_entry" == "$selected_entry" ] && \
+        ! grep "health-checker-reboot=disabled" /proc/cmdline ); then
+        should_reboot=1
     fi
-
-  . ${STATE_FILE}
-
-  set_btrfs_id
-
-  if [ ${BTRFS_ID_DEFAULT} -ne ${BTRFS_ID_CURRENT} ]; then
-      # Don't tamper with system if not booted into default snapshot
-      create_log user.alert "Machine didn't come up correctly, trying rebooting into default snapshot"
-      systemctl reboot
-  elif [ ${LAST_WORKING_BTRFS_ID} -ne ${BTRFS_ID_DEFAULT} ]; then
-      create_log user.alert "Machine didn't come up correctly, do a rollback"
-      rollback
-      if [ $? -eq 0 ]; then
-	  telem_send_record 1
-	  systemctl reboot
-      fi
-  elif [ ! -f ${REBOOTED_STATE} ]; then
-      create_log user.crit "Machine didn't come up correctly, trying a reboot"
-      echo `date "+%Y-%m-%d %H:%M"` > ${REBOOTED_STATE}
-      telem_send_record 1
-      systemctl reboot
-  else
-      create_log user.emerg "Machine didn't come up correctly, starting emergency shell"
-      stop_services
-      systemctl start emergency.target
-  fi
+    # the entry is the default one
+    case "$status" in
+        # this entry was working previously but it's not working anymore
+        "clean")
+            create_log user.alert "Machine didn't come up correctly, starting boot count again"
+            telem_send_record 1
+            # Start the boot counting again on this entry
+            # Count this as a failed try
+            tries=$((tries - 1))
+            # Remove the first character from the entry name, it's a unicode byte
+            mv /boot/efi/loader/entries/"$selected_entry" /boot/efi/loader/entries/"${selected_entry%.conf}+$tries-1.conf"
+            # and reboot
+            [ "$should_reboot" == "1" ] && systemctl reboot
+            ;;
+        # boot counting is still in effect, let systemd-boot do the rest
+        "indeterminate")
+            create_log user.alert "Machine didn't come up correctly, rebooting"
+            [ "$should_reboot" == "1" ] && systemctl reboot
+            ;;
+        # The default entry is already marked as bad, this means that there are
+        # no other good entries. Stop rebooting and enter an emergency shell
+        "bad")
+            create_log user.emerg "Machine didn't come up correctly, starting emergency shell"
+            telem_send_record 1
+            systemctl start emergency.target
+            ;;
+        # good should never appear here because systemd-bless-boot.service that
+        # marks an entry as "good" is called after boot.entry (and health-checker as well)
+        # All the next reboots for the same entry will have a "clean" state
+    esac
 }
 
-# Clear GRUB flag (used to determine if system was able to boot at all)
-echo "Clearing GRUB flag"
-grub2-editenv - set health_checker_flag=0
+if grep "health-checker=disabled" /proc/cmdline; then
+    echo "Skipping health check"
+fi
 
 echo "Starting health check"
 FAILED=0;
@@ -157,20 +155,12 @@ done
 
 if [ ${FAILED} -ne 0 ]; then
     echo "Health check failed!"
-    error_decission
+    error_decision
     telem_send_record 0
     exit 1
-else
-    echo "Health check passed"
-    # Save good working state and remove old rebooted state file
-    save_working_snapshot
-    if [ -f ${REBOOTED_STATE} ]; then
-        create_log user.info "Health check passed after reboot"
-        rm -rf ${REBOOTED_STATE}
-    fi
 fi
 
-
+echo "Health check passed"
 if [ -z "${TELEM_PAYLOAD}" ]; then
     TELEM_PAYLOAD="Health check passed"
 fi
