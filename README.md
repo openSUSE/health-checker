@@ -6,13 +6,13 @@ Check the state of a openSUSE MicroOS system after a reboot.
 ## How does this work?
 
 `health-checker` will be called by a systemd service during the boot
-process. All services, which should be checked, needs to be listed in the
-'After' section.
+process.
 
 The `health-checker` script will call several plugins. Every plugin is
-responsible to check a special service or condition. For this, the plugin is
-called with the option *check*. If this fails, the plugin will exit with the
-return value `1`, else `0`.
+responsible to check a special service or condition. All services, which
+should be checked by the plugin, needs to be listed in the 'After' section.
+To run the check the plugin is called with the option *check*. If this fails,
+the plugin will exit with the return value `1`, else `0`.
 If everyting was fine, the script will create a
 `/var/lib/misc/health-check.state` file with the number of the current,
 working btrfs subvolume with the root filesystem.
