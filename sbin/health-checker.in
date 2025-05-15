@@ -21,11 +21,30 @@ BTRFS_ID_DEFAULT=0
 SNAPSHOT_DEFAULT=""
 BTRFS_ID_CURRENT=0
 
+is_bls=0
+if [ -d /boot/efi/loader/entries ]; then
+    is_bls=1
+fi
+
 set_btrfs_id()
 {
     BTRFS_ID_DEFAULT=`btrfs subvolume get-default / | awk '{print $2}'`
     SNAPSHOT_DEFAULT="`btrfs subvolume get-default / | cut -d ' ' -f 9-`"
     BTRFS_ID_CURRENT=`findmnt --output OPTIONS --noheadings / | sed -e 's|.*subvolid=\([0-9]\+\).*|\1|g'`
+}
+
+get_snapshot()
+{
+    sed -e 's|.*@/\.snapshots/\([0-9]\+\)/snapshot.*|\1|g'
+}
+
+set_snapshot_id()
+{
+    SNAPSHOT_DEFAULT="$(btrfs subvolume get-default / | get_snapshot)"
+    SNAPSHOT_CURRENT="$(findmnt --output OPTIONS --noheadings --first-only --direction backward /usr | get_snapshot)"
+    if [ -z "${SNAPSHOT_CURRENT}" ]; then
+        SNAPSHOT_CURRENT="$(findmnt --output OPTIONS --noheadings --first-only --direction backward / | get_snapshot)"
+    fi
 }
 
 create_log()
@@ -103,7 +122,24 @@ stop_services()
     done
 }
 
-error_decission()
+# We want to enter an emergency shell just once every boot, otherwise
+# systemd restarts health-checker every time the user continues from
+# the emergency shell. This causes a loop with no way to exit the emergency shell
+# other than fixing the issue
+start_emergency_shell() {
+    if [ ! -f /run/health-checker/.emergency-shell-started ]; then
+        create_log user.emerg "Machine didn't come up correctly, starting emergency shell"
+        telem_send_record 1
+        mkdir /run/health-checker
+        touch /run/health-checker/.emergency-shell-started
+        stop_services
+        systemctl start emergency.target
+    else
+        exit 1
+    fi
+}
+
+error_decision_legacy()
 {
     if [ ! -f ${STATE_FILE} ]; then
 	# No state file, no successful boot
@@ -133,15 +169,105 @@ error_decission()
       telem_send_record 1
       systemctl reboot
   else
-      create_log user.emerg "Machine didn't come up correctly, starting emergency shell"
-      stop_services
-      systemctl start emergency.target
+      start_emergency_shell
   fi
 }
 
-# Clear GRUB flag (used to determine if system was able to boot at all)
-echo "Clearing GRUB flag"
-grub2-editenv - set health_checker_flag=0
+systemd-bless-boot() {
+    if [ -x /usr/lib/systemd/systemd-bless-boot ]; then
+        /usr/lib/systemd/systemd-bless-boot "$@"
+    fi
+}
+
+get_current_entry_bls() {
+    bootctl list --json=short | jq -r ".[] | select(.isSelected) | .id"
+}
+
+error_decision_bls() {
+    local status should_reboot current_entry
+    # systemd-bless-boot returns:
+    #   clean: boot counting is not in effect
+    #   good:  this entry booted fine. Since we are calling this at boot,
+    #          it shouldn't be possible to return "good"
+    #   dirty:   this entry has no more tries available
+    #   indeterminate: when an entry is neither good or bad, i.e.
+    #                  we are still trying to boot 3 times
+    status=$(systemd-bless-boot status)
+    # The bootloader fills the EFI variables with the info we need
+
+    # Get the booted entry
+    current_entry=$(get_current_entry_bls)
+    should_reboot=0
+    # Do not reboot by default if the entry has been chosen manually or the reboot has
+    # been disabled in the kernel cmdline
+    # selected_entry contains the boot count, remove it before comparing it to the default entry
+    if ! grep -qw "health-checker-reboot=disabled" /proc/cmdline; then
+        should_reboot=1
+    fi
+    set_snapshot_id
+    # the entry is the default one
+    case "$status" in
+        # boot counting is still in effect, let systemd-boot do the rest
+        "indeterminate")
+            if [ "$should_reboot" -eq 1 ]; then
+                create_log user.alert "Machine didn't come up correctly, trying the same snapshot"
+                # We want to reboot into the current snapshot
+                bootctl set-oneshot "$current_entry"
+                systemctl reboot
+            fi
+            start_emergency_shell $should_reboot
+            ;;
+        "dirty")
+            if [ "$should_reboot" -eq 1 ]; then
+                create_log user.alert "Machine didn't come up correctly, rebooting a different snapshot"
+                echo "NEW_SNAPSHOT_FAILED=1" > $STATE_FILE
+                if [ "$SNAPSHOT_DEFAULT" == "$SNAPSHOT_CURRENT" ]; then
+                    # If the default entry has been marked as not dirty, tell
+                    # the bootloader to pick the first new / working snapshot
+                    bootctl set-default ""
+                fi
+                systemctl reboot
+            fi
+            start_emergency_shell $should_reboot
+            ;;
+        "clean"|"good")
+            [ -f $STATE_FILE ] && . $STATE_FILE
+            # We want to reboot into the current snapshot to try one more time if it works
+            if [ "$REBOOTING_GOOD_SNAPSHOT" != "$SNAPSHOT_CURRENT" ] && [ "$should_reboot" -eq 1 ]; then
+                create_log user.alert "Machine didn't come up correctly, trying same snapshot"
+                bootctl set-oneshot "$current_entry"
+                sed -i '/REBOOTING_GOOD_SNAPSHOT/d' $STATE_FILE
+                echo "REBOOTING_GOOD_SNAPSHOT=$SNAPSHOT_CURRENT" >> $STATE_FILE
+                systemctl reboot
+            fi
+            start_emergency_shell
+            ;;
+        "bad")
+            start_emergency_shell
+            ;;
+        *)
+            create_log user.alert "Machine didn't come up correctly, found unexpected verb in systemd-bless-boot"
+            reboot_or_emergency_shell $should_reboot
+            ;;
+        # good should never appear here because systemd-bless-boot.service that
+        # marks an entry as "good" is called after boot.entry (and health-checker as well)
+        # All the next reboots for the same entry will have a "clean" state
+    esac
+}
+
+error_decision() {
+    if [ "$is_bls" == "1" ]; then
+        error_decision_bls
+    else
+        error_decision_legacy
+    fi
+}
+
+if [ "$is_bls" != "1" ]; then
+    # Clear GRUB flag (used to determine if system was able to boot at all)
+    echo "Clearing GRUB flag"
+    grub2-editenv - set health_checker_flag=0
+fi
 
 echo "Starting health check"
 FAILED=0;
@@ -157,20 +283,34 @@ done
 
 if [ ${FAILED} -ne 0 ]; then
     echo "Health check failed!"
-    error_decission
+    error_decision
     telem_send_record 0
     exit 1
 else
     echo "Health check passed"
-    # Save good working state and remove old rebooted state file
-    save_working_snapshot
-    if [ -f ${REBOOTED_STATE} ]; then
-        create_log user.info "Health check passed after reboot"
-        rm -rf ${REBOOTED_STATE}
+    if [ "$is_bls" != "1" ]; then
+        # Save good working state and remove old rebooted state file
+        save_working_snapshot
+        if [ -f ${REBOOTED_STATE} ]; then
+            create_log user.info "Health check passed after reboot"
+            rm -rf ${REBOOTED_STATE}
+        fi
+    else
+        NEW_SNAPSHOT_FAILED=0
+        REBOOTING_GOOD_SNAPSHOT=""
+        [ -f $STATE_FILE ] && . $STATE_FILE
+        set_snapshot_id
+        # If the new snapshot failed, update the default to the current one
+        if [ "$NEW_SNAPSHOT_FAILED" -eq 1 ] && [ "$SNAPSHOT_CURRENT" != "$SNAPSHOT_DEFAULT" ]; then
+            if ! sdbootutil set-default-snapshot "$SNAPSHOT_CURRENT" ; then
+               create_log user.crit "Cannot set current snapshot as default boot entry using sdbootutil"
+            fi
+        fi
+        [ -f $STATE_FILE ] && rm $STATE_FILE
     fi
 fi
 
-
+echo "Health check passed"
 if [ -z "${TELEM_PAYLOAD}" ]; then
     TELEM_PAYLOAD="Health check passed"
 fi

@@ -62,11 +62,27 @@
   <refsect1 id='description'><title>DESCRIPTION</title>
   <para><emphasis remap='B'>health-checker</emphasis>
   checks if the system is coming up correctly during boot up.
-  In case of an error, the remediation action depends on what happened before.
-  If this is the first boot after a transactional update, an automatic rollback
-  to the last known working snapshot is executed. If the snapshot was already
-  rebooted successfully before, a reboot is tried. If this does not help,
-  some sevices are shutdown and an admin has to repair the system.
+  The behavior depends if the system is using systemd-boot/grub2-bls
+  or legacy grub2.</para>
+  <para>With systemd-boot/grub2-bls: the bootloader picks the first available entry
+  and health-checker checks that the system has booted successfully. When
+  any plugin fails, then health-checker will behave depending on the entry
+  booted: if it is a snapshot that has previously been booted successfully
+  then health-checker will try rebooting the system once more, and it will
+  open an emergency shell if the system still fails to boot.
+  If this is the first boot of a new snapshot, then the system will reboot
+  a number of timed configured in <filename>/etc/kernel/tries</filename>,
+  checking the status each time. If the system stills fails to boot, then
+  health-checker marks the current entry as not working and reboot. The
+  bootloader will pick the next available boot entry.
+  It is possible to disable health-checker automated rebooting by adding
+  <command>"health-checker-reboot=disabled"</command> to the kernel cmdline.</para>
+  <para>In case of an error and legacy grub2 is used, the remediation action depends
+  on what happened before. If this is the first boot after a transactional
+  update, an automatic rollback to the last known working snapshot is
+  executed. If the snapshot was already rebooted successfully before, a
+  reboot is tried. If this does not help, some services are shutdown and an
+  admin has to repair the system.
   </para>
   <para>
     If the boot was successful, the current snapshot is marked as known to be
