@@ -6,6 +6,11 @@
 
 run_checks() {
 
+   # Check if the system is running legacy grub as the check file
+   # is only used there
+   if [ -d /boot/efi/loader/entries ]; then
+       return 0
+   fi
 # Simple check: if this is the very first boot, succeed.
 # If not, fail.
    if [ -f /var/lib/misc/health-check.state ]; then
