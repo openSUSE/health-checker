@@ -2,6 +2,9 @@ health-checker NEWS -- history of user-visible changes.
 
 Copyright (C) 2017-2024 Thorsten Kukuk et al.
 
+Version 1.13
+* Use Automatic Boot Assessment for systemd-boot and grub2-bls
+
 Version 1.12
 * Improve RPM database consistency check: Use rpm command directly to
   prevent blocking when there is no zypper database yet or when the
