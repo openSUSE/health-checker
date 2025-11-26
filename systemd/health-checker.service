@@ -15,4 +15,3 @@ RemainAfterExit=yes
 
 [Install]
 RequiredBy=boot-complete.target
-WantedBy=default.target
