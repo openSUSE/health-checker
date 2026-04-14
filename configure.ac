@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT(health-checker, 1.13)
+AC_INIT([health-checker],[1.13])
 AM_INIT_AUTOMAKE
 AC_PREFIX_DEFAULT(/usr)
 
@@ -30,5 +30,6 @@ JH_CHECK_XML_CATALOG([http://docbook.sourceforge.net/release/xsl/current/manpage
                 [DocBook XSL Stylesheets], [], enable_man=no)
 AM_CONDITIONAL(ENABLE_REGENERATE_MAN, test x$enable_man != xno)
 
-AC_OUTPUT([Makefile sbin/Makefile man/Makefile systemd/Makefile \
+AC_CONFIG_FILES([Makefile sbin/Makefile man/Makefile systemd/Makefile \
 	plugins/Makefile dracut/Makefile grub/Makefile])
+AC_OUTPUT
