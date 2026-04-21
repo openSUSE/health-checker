@@ -2,6 +2,8 @@
 Description=MicroOS Health Checker
 After=rebootmgr.service
 After=systemd-logind.service
+After=k3s.service
+After=k3s-agent.service
 Wants=local-fs.target
 
 [Service]
