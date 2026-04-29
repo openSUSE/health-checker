@@ -2,6 +2,7 @@
 Description=MicroOS Health Checker
 After=rebootmgr.service
 After=systemd-logind.service
+Before=systemd-user-sessions.service
 Wants=local-fs.target
 
 [Service]
