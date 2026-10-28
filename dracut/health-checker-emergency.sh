@@ -30,11 +30,16 @@ umount_and_reboot()
 
 clear_and_reboot()
 {
-  # Try to clear the health_checker flag variable in GRUB environment variable
-  # block
-  echo "Clearing GRUB health_checker_flag"
-  grub2-editenv - set health_checker_flag=0
-
+  # Try to clear the health_checker flag variable in GRUB environment
+  # variable block. It is meaningless with systemd-boot or grub2-bls, which
+  # set the LoaderInfo EFI variable; the ESP is not mounted in the initrd, so
+  # look at efivars instead. grub2-editenv is only installed in the initrd
+  # when available.
+  if ! ls /sys/firmware/efi/efivars/LoaderInfo-* > /dev/null 2>&1 &&
+    command -v grub2-editenv > /dev/null; then
+    echo "Clearing GRUB health_checker_flag"
+    grub2-editenv - set health_checker_flag=0
+  fi
   umount /run/health-checker
   systemctl reboot --force
 }

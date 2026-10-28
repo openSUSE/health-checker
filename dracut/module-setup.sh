@@ -19,7 +19,8 @@ install() {
     if [ ! -x /bin/sdbootutil ]; then
         inst_hook emergency 90 "$moddir"/health-checker-emergency.sh
 
-        inst_multiple date btrfs awk grub2-editenv
+        inst_multiple date btrfs awk
+        inst_multiple -o grub2-editenv
     fi
 }
 
