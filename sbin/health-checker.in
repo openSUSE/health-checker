@@ -30,7 +30,7 @@ set_btrfs_id()
 {
     BTRFS_ID_DEFAULT=`btrfs subvolume get-default / | awk '{print $2}'`
     SNAPSHOT_DEFAULT="`btrfs subvolume get-default / | cut -d ' ' -f 9-`"
-    BTRFS_ID_CURRENT=`findmnt --output OPTIONS --noheadings / | sed -e 's|.*subvolid=\([0-9]\+\).*|\1|g'`
+    BTRFS_ID_CURRENT=`findmnt --output OPTIONS --noheadings / | sed -n -e 's|.*subvolid=\([0-9]\+\).*|\1|p'`
 }
 
 get_snapshot()
@@ -50,8 +50,10 @@ set_snapshot_id()
 create_log()
 {
     local SEVERITY=1
+    # The message can be split in multiple arguments
+    local MESSAGE="${*:2}"
 
-    logger -s -p $1 $2
+    logger -s -p "$1" "${MESSAGE}"
 
     # Create severity and payload for telemetrics if available
     case $1 in
@@ -73,9 +75,9 @@ create_log()
 	TELEM_SEVERITY=$SEVERITY
     fi
     if [ -z "${TELEM_PAYLOAD}" ]; then
-	TELEM_PAYLOAD=$2
+	TELEM_PAYLOAD="${MESSAGE}"
     else
-	TELEM_PAYLOAD="${TELEM_PAYLOAD}\n$2"
+	TELEM_PAYLOAD="${TELEM_PAYLOAD}\n${MESSAGE}"
     fi
 }
 
@@ -94,7 +96,7 @@ save_working_snapshot()
 {
     set_btrfs_id
 
-    if [ ${BTRFS_ID_DEFAULT} -eq ${BTRFS_ID_CURRENT} ]; then
+    if [ ${BTRFS_ID_DEFAULT} -eq ${BTRFS_ID_CURRENT:-0} ]; then
 	echo "LAST_WORKING_BTRFS_ID=${BTRFS_ID_DEFAULT}" > $STATE_FILE
 	echo "LAST_WORKING_SNAPSHOT=${SNAPSHOT_DEFAULT}" >> $STATE_FILE
     fi
@@ -106,8 +108,9 @@ rollback()
     mount -o remount,rw /.snapshots
     btrfs subvolume set-default ${LAST_WORKING_BTRFS_ID} /.snapshots
     if [ $? -ne 0 ]; then
-        create_log user.crit "ERROR: btrfs set-default $BTRFS_ID_DEFAULT failed!"
-	telem_send_payload 1
+        create_log user.crit "ERROR: btrfs set-default ${LAST_WORKING_BTRFS_ID} failed," \
+            "cannot roll back from btrfs id ${BTRFS_ID_DEFAULT}!"
+	telem_send_record 1
         exit 1
     fi
 }
@@ -128,7 +131,9 @@ stop_services()
 # other than fixing the issue
 start_emergency_shell() {
     if [ ! -f /run/health-checker/.emergency-shell-started ]; then
-        create_log user.emerg "Machine didn't come up correctly, starting emergency shell"
+        create_log user.emerg "Machine didn't come up correctly (snapshot" \
+            "${SNAPSHOT_CURRENT:-btrfs id ${BTRFS_ID_CURRENT:-unknown}}), starting emergency" \
+            "shell"
         telem_send_record 1
         mkdir /run/health-checker
         touch /run/health-checker/.emergency-shell-started
@@ -143,7 +148,8 @@ error_decision_legacy()
 {
     if [ ! -f ${STATE_FILE} ]; then
 	# No state file, no successful boot
-	create_log user.emerg "Machine didn't come up correctly, stopping services"
+	create_log user.emerg "Machine didn't come up correctly and no state file" \
+	    "${STATE_FILE} exists, stopping services"
 	stop_services
 	return
     fi
@@ -152,19 +158,23 @@ error_decision_legacy()
 
   set_btrfs_id
 
-  if [ ${BTRFS_ID_DEFAULT} -ne ${BTRFS_ID_CURRENT} ]; then
+  if [ ${BTRFS_ID_DEFAULT} -ne ${BTRFS_ID_CURRENT:-0} ]; then
       # Don't tamper with system if not booted into default snapshot
-      create_log user.alert "Machine didn't come up correctly, trying rebooting into default snapshot"
+      create_log user.alert "Machine didn't come up correctly, booted btrfs id" \
+          "${BTRFS_ID_CURRENT:-unknown} is not the default one (${BTRFS_ID_DEFAULT})," \
+          "rebooting into the default snapshot"
       systemctl reboot
   elif [ ${LAST_WORKING_BTRFS_ID} -ne ${BTRFS_ID_DEFAULT} ]; then
-      create_log user.alert "Machine didn't come up correctly, do a rollback"
+      create_log user.alert "Machine didn't come up correctly, rolling back from btrfs id" \
+          "${BTRFS_ID_DEFAULT} to the last working one (${LAST_WORKING_BTRFS_ID})"
       rollback
       if [ $? -eq 0 ]; then
 	  telem_send_record 1
 	  systemctl reboot
       fi
   elif [ ! -f ${REBOOTED_STATE} ]; then
-      create_log user.crit "Machine didn't come up correctly, trying a reboot"
+      create_log user.crit "Machine didn't come up correctly, default snapshot (btrfs id" \
+          "${BTRFS_ID_DEFAULT}) is the last working one, rebooting once to retry"
       echo `date "+%Y-%m-%d %H:%M"` > ${REBOOTED_STATE}
       telem_send_record 1
       systemctl reboot
@@ -210,16 +220,20 @@ error_decision_bls() {
         # boot counting is still in effect, let systemd-boot do the rest
         "indeterminate")
             if [ "$should_reboot" -eq 1 ]; then
-                create_log user.alert "Machine didn't come up correctly, trying the same snapshot"
+                create_log user.alert "Machine didn't come up correctly, rebooting into the" \
+                    "same snapshot (${SNAPSHOT_CURRENT}) to retry"
                 # We want to reboot into the current snapshot
                 bootctl set-oneshot "$current_entry"
                 systemctl reboot
+                return
             fi
-            start_emergency_shell $should_reboot
+            start_emergency_shell
             ;;
         "dirty")
             if [ "$should_reboot" -eq 1 ]; then
-                create_log user.alert "Machine didn't come up correctly, rebooting a different snapshot"
+                create_log user.alert "Machine didn't come up correctly and boot attempts" \
+                    "are exhausted for snapshot ${SNAPSHOT_CURRENT}, rebooting into a" \
+                    "different snapshot"
                 echo "NEW_SNAPSHOT_FAILED=1" > $STATE_FILE
                 if [ "$SNAPSHOT_DEFAULT" == "$SNAPSHOT_CURRENT" ]; then
                     # If the default entry has been marked as not dirty, tell
@@ -227,18 +241,21 @@ error_decision_bls() {
                     bootctl set-default ""
                 fi
                 systemctl reboot
+                return
             fi
-            start_emergency_shell $should_reboot
+            start_emergency_shell
             ;;
         "clean"|"good")
             [ -f $STATE_FILE ] && . $STATE_FILE
             # We want to reboot into the current snapshot to try one more time if it works
             if [ "$REBOOTING_GOOD_SNAPSHOT" != "$SNAPSHOT_CURRENT" ] && [ "$should_reboot" -eq 1 ]; then
-                create_log user.alert "Machine didn't come up correctly, trying same snapshot"
+                create_log user.alert "Machine didn't come up correctly, rebooting into the" \
+                    "same snapshot (${SNAPSHOT_CURRENT}) to retry"
                 bootctl set-oneshot "$current_entry"
                 sed -i '/REBOOTING_GOOD_SNAPSHOT/d' $STATE_FILE
                 echo "REBOOTING_GOOD_SNAPSHOT=$SNAPSHOT_CURRENT" >> $STATE_FILE
                 systemctl reboot
+                return
             fi
             start_emergency_shell
             ;;
@@ -246,8 +263,13 @@ error_decision_bls() {
             start_emergency_shell
             ;;
         *)
-            create_log user.alert "Machine didn't come up correctly, found unexpected verb in systemd-bless-boot"
-            reboot_or_emergency_shell $should_reboot
+            create_log user.alert "Machine didn't come up correctly, systemd-bless-boot" \
+                "returned unexpected status \"${status}\" for snapshot ${SNAPSHOT_CURRENT}"
+            if [ "$should_reboot" -eq 1 ]; then
+                systemctl reboot
+            else
+                start_emergency_shell
+            fi
             ;;
         # good should never appear here because systemd-bless-boot.service that
         # marks an entry as "good" is called after boot.entry (and health-checker as well)
@@ -303,7 +325,8 @@ else
         # If the new snapshot failed, update the default to the current one
         if [ "$NEW_SNAPSHOT_FAILED" -eq 1 ] && [ "$SNAPSHOT_CURRENT" != "$SNAPSHOT_DEFAULT" ]; then
             if ! sdbootutil set-default-snapshot "$SNAPSHOT_CURRENT" ; then
-               create_log user.crit "Cannot set current snapshot as default boot entry using sdbootutil"
+               create_log user.crit "Cannot set current snapshot ${SNAPSHOT_CURRENT} as" \
+                   "default boot entry using sdbootutil"
             fi
         fi
         [ -f $STATE_FILE ] && rm $STATE_FILE
